@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+@import './tokens.css';
+@import './motion.css';
+
+/* Tailwind v4：把语义 tokens 映射为工具类（bg-bg / text-t1 / border-line / font-display …） */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sunken: var(--bg-sunken);
+  --color-surface: var(--surface);
+  --color-t1: var(--text-1);
+  --color-t2: var(--text-2);
+  --color-t3: var(--text-3);
+  --color-line: var(--border);
+  --color-divider: var(--divider);
+  --color-accent: var(--accent);
+  --color-accent-weak: var(--accent-weak);
+  --color-ok: var(--ok);
+  --color-info: var(--info);
+  --color-warn: var(--warn);
+  --color-chapter: var(--chapter);
+  --color-chapter-weak: var(--chapter-weak);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+}
+
+/* ── 基础排版 ── */
+html {
+  font-family: var(--font-body);
+  color: var(--text-1);
+  background: var(--bg);
+  line-break: strict;
+  /* 注意：不设全局 scroll-behavior:smooth——smooth 滚动会被紧随的 history.replaceState 取消；
+     需要平滑滚动处显式传 behavior:'smooth' */
+}
+body { margin: 0; }
+
+/* 焦点环：2px 品牌橙 + 2px 偏移（交互语义=品牌色，全站统一） */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 行内代码与中文之间留 0.15em 空隙 */
+code { font-family: var(--font-mono); }
+:not(pre) > code {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+
+/* 跳转链接（a11y 第一站） */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--accent);
+  color: var(--accent-ink);
+  padding: 8px 16px;
+  border-radius: 0 0 var(--r-md) 0;
+}
+.skip-link:focus-visible { left: 0; }
+
+/* 阅读进度条（Agent 状态栏隐喻；颜色=当前章节色） */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  transform-origin: 0 50%;
+  background: var(--chapter);
+  z-index: 50;
+  transition: background-color var(--dur-smooth) var(--ease-standard);
+}
+
+/* ── Shiki 双主题代码块（defaultColor:false → CSS 变量随主题切换） ── */
+.shiki-host pre {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  font-family: var(--font-mono);
+  white-space: pre;
+}
+.shiki-host code { display: block; }
+.shiki-host .shiki span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+}
+[data-theme='dark'] .shiki-host .shiki span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+}
+
+/* ── KaTeX 对齐正文色 ── */
+.katex { color: var(--text-1); font-size: 1.02em; }
+.katex-display { margin: 0; }
+
+/* ── 代码块横向滚动提示：常显细滚动条（P2-5） ── */
+.shiki-host, .code-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--divider) transparent;
+}
+.shiki-host::-webkit-scrollbar, .code-scroll::-webkit-scrollbar { height: 6px; }
+.shiki-host::-webkit-scrollbar-track, .code-scroll::-webkit-scrollbar-track { background: transparent; }
+.shiki-host::-webkit-scrollbar-thumb, .code-scroll::-webkit-scrollbar-thumb {
+  background: var(--divider);
+  border-radius: 3px;
+}
+
+/* ── 文本划选：品牌橙（此前为 UA 默认灰；DESIGN.md §6 状态矩阵补缺） ── */
+::selection {
+  background: var(--selection);
+}

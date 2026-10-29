@@ -1,0 +1,1 @@
+{"id":"2-7","altIds":[],"chapter":2,"name":"2-7","title":"从个人范文创建“去 AI 味”写作 Skill","type":"design","typeLabel":"设计","stars":2,"summary":"从个人范文创建“去 AI 味”写作 Skill；练习 Skill 的触发条件、规则、示例、作用域与迭代维护，不依赖独立代码项目","path":null,"external":false,"status":"设计","statusNote":"轻量正文实验，不依赖独立代码项目；自动从多条反馈提炼规则的验收仍保留在第八章 ai-style-skill 补充项目。","readme":[],"codeFiles":[]}

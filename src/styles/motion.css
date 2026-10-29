@@ -1,0 +1,163 @@
+/* ============================================================
+   motion.css — 动效系统（DESIGN.md §5）
+   原则：动效解释因果 / 阅读优先 ≤320ms / 物理感一致 / 尊重 reduced-motion
+   ============================================================ */
+
+:root {
+  /* 时长 */
+  --dur-instant: 100ms;
+  --dur-quick: 180ms;
+  --dur-smooth: 280ms;
+  --dur-deliberate: 450ms;
+  --dur-ambient: 6000ms;
+
+  /* 缓动 */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-entry: cubic-bezier(0, 0.4, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* 弹簧（CSS linear() 预设，标准过冲 ~8%） */
+  --spring: linear(
+    0, 0.0088 1.77%, 0.0343 3.62%, 0.0839 6.35%, 0.157 10.06%, 0.2208 13.4%,
+    0.282 16.8%, 0.3512 20.94%, 0.4157 25.14%, 0.4746 29.4%, 0.5272 33.68%,
+    0.5734 38%, 0.6127 42.3%, 0.6453 46.6%, 0.6714 51%, 0.6916 55.4%,
+    0.7055 60%, 0.7141 64.6%, 0.7181 69.4%, 0.7188 73.8%, 0.7164 78.8%,
+    0.7116 83.4%, 0.706 87.6%, 0.7017 91.8%, 0.6999 95.6%, 0.7013 99.4%, 1
+  );
+
+  /* 编排步进 */
+  --stagger: 60ms;
+  --stagger-fine: 30ms;
+}
+
+/* ── 通用动效工具类 ── */
+
+/* 链接下划线：自左向右绘制，离开自右退回 */
+.u-link {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 0% 1.5px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size var(--dur-quick) var(--ease-standard);
+}
+.u-link:hover { background-size: 100% 1.5px; }
+
+/* 卡片抬升：hover 用品牌橙描边（交互语义=品牌色） */
+.card-lift {
+  transition:
+    transform var(--dur-instant) var(--ease-standard),
+    border-color var(--dur-instant) var(--ease-standard),
+    box-shadow var(--dur-instant) var(--ease-standard);
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+/* 按下回弹 */
+.press:active { transform: scale(0.97); transition: transform 80ms var(--ease-exit); }
+
+/* 入场：自 12px 升入（页面/区块级） */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rise-in { animation: rise-in var(--dur-smooth) var(--ease-entry) both; }
+
+/* 三拍 stagger 编排（内容→强调→操作） */
+.beat-1 { animation-delay: 0ms; }
+.beat-2 { animation-delay: var(--stagger); }
+.beat-3 { animation-delay: calc(var(--stagger) * 2); }
+
+/* 章节扉页章号：scale .96→1 */
+@keyframes hero-num {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+.hero-num { animation: hero-num var(--dur-deliberate) var(--ease-entry) both; }
+
+/* 锚点到达提示：左缘章节色竖条闪烁 */
+@keyframes anchor-flash {
+  0% { box-shadow: inset 4px 0 0 var(--chapter); }
+  100% { box-shadow: inset 4px 0 0 transparent; }
+}
+.anchor-flash { animation: anchor-flash 1.2s var(--ease-standard) both; }
+
+/* 复制按钮：勾由 stroke-dashoffset 画出 */
+@keyframes draw-check { to { stroke-dashoffset: 0; } }
+.check-path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw-check 240ms var(--ease-entry) forwards;
+}
+
+/* 首页 ReAct 循环：光点沿环形路径流动（ambient，仅此一处常驻动画） */
+@keyframes orbit { to { offset-distance: 100%; } }
+.react-orbit-dot {
+  offset-path: path('M 90 10 A 80 80 0 1 1 89.9 10');
+  animation: orbit var(--dur-ambient) linear infinite;
+}
+
+/* 骨架屏 shimmer */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-sunken) 25%, var(--surface-hover) 50%, var(--bg-sunken) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+/* ── View Transitions：页面转场 + 主题圆形揭示 ── */
+@keyframes vt-out {
+  to { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes vt-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+::view-transition-old(page) { animation: vt-out 240ms var(--ease-exit) both; }
+::view-transition-new(page) { animation: vt-in 280ms var(--ease-entry) both; }
+
+::view-transition-old(root) { animation: none; }
+::view-transition-new(root) { animation: none; }
+
+/* 主题圆形揭示：自点击坐标（--vt-x/--vt-y）扩散 */
+::view-transition-old(theme) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(theme) {
+  animation: theme-reveal var(--dur-deliberate) var(--ease-entry) both;
+  mix-blend-mode: normal;
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--vt-x, 100%) var(--vt-y, 0)); }
+  to { clip-path: circle(165vmax at var(--vt-x, 100%) var(--vt-y, 0)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(theme), ::view-transition-new(theme) { animation: none; }
+}
+
+/* ── 可访问性：reduced-motion 全局降级 ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 80ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
+  .react-orbit-dot, .skeleton { animation: none !important; }
+}
+
+/* ── 主题切换冻结期：颜色瞬时落定，防 VT 期间 CSSTransition 卡死旧色 ── */
+.theme-switching, .theme-switching *, .theme-switching *::before, .theme-switching *::after {
+  transition: none !important;
+}
+
+/* ── 星标逐个点亮：实验卡展开瞬间（每颗延迟 40ms） ── */
+.star-pop { display: inline-flex; }
+.star-pop svg {
+  animation: star-pop 240ms var(--ease-entry) both;
+}
+@keyframes star-pop {
+  from { opacity: 0; transform: scale(0.4) rotate(-18deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}

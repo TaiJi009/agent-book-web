@@ -1,0 +1,26 @@
+{
+  "terms": [
+    { "id": "agent-formula", "term": "Agent = LLM + 上下文 + 工具", "en": "The Core Formula", "def": "全书核心公式：LLM 是大脑（决策），上下文是眼睛（能看见什么），工具是手脚（能做什么）。学术层对应策略（Policy）、观察空间与动作空间；生产形态展开为 Agent = Model + Harness。", "chapters": ["intro", "1"] },
+    { "id": "harness", "term": "Harness", "en": "Harness", "def": "Agent 边界内、模型之外的运行与治理层：上下文管理 + 工具接口 + 约束 + 验证 + 纠正。模型是强大但不可预测的马，Harness 是把力量引导到正确方向的马具。", "chapters": ["1", "5"] },
+    { "id": "react", "term": "ReAct 循环", "en": "ReAct Loop", "def": "Agent 执行任务的核心模式：思考（Reasoning）→ 行动（Acting）→ 观察（Observing）的迭代循环，通过不断追加轨迹让模型持续推进任务，直到任务完成。", "chapters": ["1", "2"] },
+    { "id": "context-eng", "term": "上下文工程", "en": "Context Engineering", "def": "系统性设计、组织和提供 AI 完成任务所需全部背景知识的工程学科。上下文的质量决定 Agent 能力的上限——中等模型配精心组织的上下文，往往胜过顶级模型在信息匮乏下的摸索。", "chapters": ["2"] },
+    { "id": "kv-cache", "term": "KV Cache", "en": "KV Cache", "def": "推理引擎缓存已计算 token 的键值对以避免重复计算的机制。核心约束：前缀改一个字节，首个不同 token 之后的缓存全部失效——因此系统提示词一旦确定就不要改，动态信息永远追加到末尾。", "chapters": ["2"] },
+    { "id": "prefix-trajectory", "term": "静态前缀 + 轨迹", "en": "Static Prefix + Trajectory", "def": "上下文的构成模型：系统提示词 + 工具定义为对话中不变的静态前缀，用户消息 + 模型回复 + 工具结果为动态增长的轨迹。这是 KV Cache 优化与上下文压缩的共同基础。", "chapters": ["1", "2"] },
+    { "id": "agent-skills", "term": "Agent Skills", "en": "Agent Skills", "def": "把领域能力模块化为可按需加载的知识包：SKILL.md 元数据目录常驻上下文，完整正文在被选中时才加载，可再通过文件引用深入子文档。是渐进式披露的典型形态。", "chapters": ["2", "4"] },
+    { "id": "prog-disclosure", "term": "渐进式披露", "en": "Progressive Disclosure", "def": "不把全部信息一次性放进上下文，而是先给可检索的目录、再按需加载细节。同时优化上下文预算与选择精度；Skills、分层检索、主动工具发现都是它的变体。", "chapters": ["1", "2", "4"] },
+    { "id": "status-bar", "term": "Agent 状态栏", "en": "Agent Status Bar", "def": "在上下文末尾持续注入的结构化状态摘要（任务进度、工具调用计数、环境信息），把分散在轨迹中的隐式状态提炼为可直接检索的显式知识。实验显示小模型带状态栏可接近前沿大模型。", "chapters": ["2"] },
+    { "id": "context-rot", "term": "上下文腐化", "en": "Context Rot", "def": "上下文装得下但找不到了：随着无关内容占比升高，注意力被稀释，关键信息检索精度下降。与上下文溢出（装不下）不同，腐化更隐蔽——Agent 表面正常工作，决策质量悄然下滑。", "chapters": ["2"] },
+    { "id": "proposer-reviewer", "term": "提议者—审核者", "en": "Proposer-Reviewer", "def": "产出与评判由两个不共享上下文的角色分别承担，评判方看到的是产物本身而非推理过程。成立前提是自审不可靠；用于安全审批、内容迭代、评估 UI 与更新提案审核。", "chapters": ["1", "4", "5", "10"] },
+    { "id": "sidecar", "term": "Sidecar 机制", "en": "Sidecar", "def": "与主模型流式输出并行的轻量级 LLM 调用，只看结构化数据（如工具调用的 JSON 字段）做安全校验或上下文构造，不看自由文本——防止被注入话术操纵。", "chapters": ["4"] },
+    { "id": "mcp", "term": "MCP", "en": "Model Context Protocol", "def": "Anthropic 发布的模型-工具互操作开放标准：工具、资源、提示三类原语，stdio / Streamable HTTP 传输。解决一次开发处处可用，但不解决工具选择过载——后者靠 Skills 与主动工具发现。", "chapters": ["4"] },
+    { "id": "prompt-injection", "term": "提示注入", "en": "Prompt Injection", "def": "攻击者通过 Agent 处理的外部内容把伪装成指令的文本混入上下文、劫持行为的攻击。上下文层防御（来源标记、指令/数据分离）只能降低成功率；根本防线在执行层与数据层。", "chapters": ["2", "3", "4", "5"] },
+    { "id": "rag", "term": "RAG", "en": "Retrieval-Augmented Generation", "def": "检索增强生成：分块 → 稠密/稀疏检索 → 融合（RRF）→ 重排序 → 生成。上下文感知检索在索引期为分块补前缀摘要，可将检索失败率降低 49–67%。", "chapters": ["3"] },
+    { "id": "user-memory", "term": "用户记忆", "en": "User Memory", "def": "跨会话的个性化持久化知识：从 Simple Notes 到 Advanced JSON Cards 再到可执行代码（User as Code）的渐进式格式。与 RAG 结合为双层记忆——结构化事实常驻，原始细节按需检索。", "chapters": ["3"] },
+    { "id": "post-training", "term": "Mid-training / SFT / RL", "en": "Post-training", "def": "能力开发三阶段：Mid-training 在目标分布上补知识与基础能力；SFT 用示范固化格式与协议（只在回答上算损失）；RL 最大化期望奖励、探索示范外策略。决策框架：底座缺→Mid-training，协议缺→SFT，策略缺→RL。", "chapters": ["8"] },
+    { "id": "rlvr-rlvp", "term": "RLVR 与 RLVP", "en": "Verifiable Rewards / Penalty", "def": "RLVR 用可执行验证（测试、状态断言）直接判定奖励；RLVP 在其上加入路径约束——奖励结果、惩罚可验证的违规路径，恢复全胜/全败 rollout 组内的学习信号。", "chapters": ["8"] },
+    { "id": "opd", "term": "On-Policy Distillation", "en": "On-Policy Distillation", "def": "学生自己采样轨迹、教师在学生的每个状态上给出逐 token 分布，把一次 rollout 的终点标量扩展为密集监督。数学任务达同等性能约需纯 RL 的 1/10 训练步数。", "chapters": ["8"] },
+    { "id": "loop-eng", "term": "Loop 工程", "en": "Loop Engineering", "def": "设计让 Agent 持续运转的循环——发现任务、执行、验证、记录——由验证器而非模型自己判定何时可以停。核心共识：循环的瓶颈在验证器而不在模型。", "chapters": ["1", "10"] },
+    { "id": "pass-k", "term": "Pass@k 与 Pass^k", "en": "Pass@k vs Pass^k", "def": "Pass@k：k 次至少成功一次的概率，衡量能力上限（技术奇观）；Pass^k：连续 k 次全部成功的概率，衡量业务可靠性。p=0.6 时 Pass@5≈99%，Pass^5≈7.8%。", "chapters": ["7"] },
+    { "id": "llm-judge", "term": "LLM-as-a-Judge", "en": "LLM-as-a-Judge", "def": "用 LLM 按 Rubric 对开放式输出评分。四准则：基于专家指导、全面覆盖（含陷阱）、按重要性加权（支持一票否决）、评价标准自包含。需防范长度偏差与同源模型合谋。", "chapters": ["7"] }
+  ]
+}

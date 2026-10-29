@@ -1,0 +1,143 @@
+/* ============================================================
+   tokens.css — 设计系统唯一真源（DESIGN.md 的实现）
+   三层结构：品牌基底层（固定 HEX）→ 语义派生层 → 章节身份层（随章轮换）
+   ============================================================ */
+
+:root {
+  /* ── 品牌基底层（brand-guidelines skill，HEX 锚定，禁止改动） ── */
+  --brand-dark: #141413;
+  --brand-light: #faf9f5;
+  --brand-gray-mid: #b0aea5;
+  --brand-gray-light: #e8e6dc;
+  --brand-orange: #d97757;
+  --brand-blue: #6a9bcc;
+  --brand-green: #788c5d;
+
+  /* ── 语义派生层 · 亮色主题 ── */
+  --bg: var(--brand-light);
+  --bg-sunken: var(--brand-gray-light);
+  --surface: #ffffff;
+  --surface-hover: #ffffff;
+
+  --text-1: var(--brand-dark);
+  --text-2: oklch(0.45 0.008 90);   /* 对比 ≥7:1 */
+  --text-3: oklch(0.55 0.008 90);   /* 对比 ≥4.5:1，装饰灰禁用于正文 */
+
+  --border: oklch(from var(--brand-dark) l c h / 0.12);
+  --divider: var(--brand-gray-mid);
+
+  --accent: var(--brand-orange);
+  --accent-ink: #ffffff;             /* accent 之上的文字 */
+  --accent-weak: oklch(from var(--brand-orange) l c h / 0.12);
+  --selection: oklch(from var(--brand-orange) l c h / 0.25);  /* 文本划选：比弱选中醒目一档 */
+
+  --ok: var(--brand-green);
+  --info: var(--brand-blue);
+  --warn: var(--brand-orange);
+
+  /* ── 深度四层 ── */
+  --shadow-1: none;                                   /* 卡片：1px 边框分层 */
+  --shadow-2: 0 4px 24px -8px oklch(0 0 0 / 0.14);    /* popover */
+  --shadow-3: 0 16px 48px -12px oklch(0 0 0 / 0.22);  /* modal */
+  --overlay: oklch(0 0 0 / 0.4);
+
+  /* ── 章节色环：12 站，OKLCH hue 锚点（彩度钳制到品牌"土感"区间） ──
+     引言→后记 绕色轮一周回环；L 由下方 --ch-l 统一控制 */
+  --ch-c: 0.09;
+  --ch-l: 0.65;
+  --ch-intro-h: 190;  /* 引言 青碧 */
+  --ch1-h: 205;       /* 蓝绿 */
+  --ch2-h: 235;       /* 天蓝 */
+  --ch3-h: 265;       /* 靛蓝 */
+  --ch4-h: 290;       /* 紫罗兰 */
+  --ch5-h: 320;       /* 洋红 */
+  --ch6-h: 350;       /* 玫红 */
+  --ch7-h: 25;        /* 橙红 */
+  --ch8-h: 70;        /* 琥珀 */
+  --ch9-h: 115;       /* 黄绿 */
+  --ch10-h: 145;      /* 草绿 */
+
+  /* 当前上下文章节色（由 data-chapter 挂载；默认=引言） */
+  --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch-intro-h));
+  --chapter-weak: oklch(from var(--chapter) l c h / 0.14);
+}
+
+/* ── 暗色主题（墨黑纸白，品牌色互为底字） ── */
+[data-theme='dark'] {
+  --bg: var(--brand-dark);
+  --bg-sunken: oklch(0.20 0.004 90);
+  --surface: oklch(0.235 0.005 90);
+  --surface-hover: oklch(0.26 0.005 90);
+
+  --text-1: var(--brand-light);
+  --text-2: oklch(0.78 0.005 90);
+  --text-3: oklch(0.66 0.005 90);
+
+  --border: oklch(from var(--brand-light) l c h / 0.14);
+  --divider: oklch(from var(--brand-gray-mid) l c h / 0.35);
+
+  --accent: oklch(0.72 0.10 45);      /* 品牌橙提亮一档 */
+  --accent-ink: #141413;
+  --accent-weak: oklch(0.72 0.10 45 / 0.16);
+  --selection: oklch(0.72 0.10 45 / 0.30);
+
+  --ok: oklch(0.72 0.07 130);
+  --info: oklch(0.74 0.08 250);
+  --warn: oklch(0.72 0.10 45);
+
+  --shadow-1: none;
+  --shadow-2: 0 4px 24px -8px oklch(0 0 0 / 0.55);
+  --shadow-3: 0 16px 48px -12px oklch(0 0 0 / 0.65);
+  --overlay: oklch(0 0 0 / 0.55);
+
+  --ch-l: 0.74;   /* 暗色下章节色整体提亮 */
+}
+
+/* ── 章节身份挂载：<html data-chapter="N"> 或容器上设置 ── */
+[data-chapter='intro']  { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch-intro-h)); }
+[data-chapter='1']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch1-h)); }
+[data-chapter='2']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch2-h)); }
+[data-chapter='3']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch3-h)); }
+[data-chapter='4']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch4-h)); }
+[data-chapter='5']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch5-h)); }
+[data-chapter='6']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch6-h)); }
+[data-chapter='7']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch7-h)); }
+[data-chapter='8']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch8-h)); }
+[data-chapter='9']      { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch9-h)); }
+[data-chapter='10']     { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch10-h)); }
+[data-chapter='outro']  { --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch-intro-h)); }
+
+/* ── 字体族 ── */
+:root {
+  --font-display: 'Poppins', 'Noto Sans SC', 'PingFang SC', Arial, sans-serif;
+  --font-body: 'Lora', 'Noto Serif SC', 'Songti SC', Georgia, serif;
+  --font-mono: 'JetBrains Mono', 'Noto Serif SC', ui-monospace, Menlo, monospace;
+
+  /* ── 字号 ramp（DESIGN.md §3） ── */
+  --fs-display: clamp(4rem, 10vw, 6.5rem);
+  --fs-h1: 2.125rem;
+  --fs-h2: 1.5rem;
+  --fs-h3: 1.1875rem;
+  --fs-body: 1.09375rem;   /* 17.5px */
+  --fs-small: 0.875rem;
+  --fs-caption: 0.75rem;
+
+  /* ── 间距（8pt 网格） ── */
+  --sp-1: 0.25rem;  --sp-2: 0.5rem;  --sp-3: 0.75rem;
+  --sp-4: 1rem;     --sp-6: 1.5rem;  --sp-8: 2rem;
+  --sp-12: 3rem;    --sp-16: 4rem;   --sp-24: 6rem;
+
+  /* ── 阅读量宽与栏宽 ── */
+  --measure: 38em;
+  --w-sidebar: 264px;
+  --w-toc: 220px;
+
+  /* ── 圆角 ── */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-full: 999px;
+}
+
+/* 高对比偏好：结构线增强 */
+@media (prefers-contrast: more) {
+  :root { --border: oklch(from var(--brand-dark) l c h / 0.35); }
+  [data-theme='dark'] { --border: oklch(from var(--brand-light) l c h / 0.4); }
+}

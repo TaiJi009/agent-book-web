@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>深入理解 AI Agent · 知识站</title>
+    <script>
+      // 首屏前同步设主题，避免闪白（FOUC）
+      try {
+        var t = localStorage.getItem('abw-theme')
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Boot splash：bundle 解析期间的品牌化加载态（React 挂载后整体替换） -->
+      <div id="boot" aria-hidden="true">
+        <style>
+          #boot {
+            min-height: 72vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            font-family: system-ui, sans-serif;
+          }
+          #boot .boot-mark {
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 10px;
+            background: #141413;
+            color: #faf9f5;
+            font-size: 20px;
+            font-weight: 600;
+          }
+          #boot .boot-bar {
+            width: 120px;
+            height: 3px;
+            border-radius: 2px;
+            background: #e8e6dc;
+            overflow: hidden;
+            position: relative;
+          }
+          #boot .boot-bar::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            width: 40%;
+            border-radius: 2px;
+            background: #d97757;
+            animation: boot-slide 1.1s ease-in-out infinite;
+          }
+          @keyframes boot-slide {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(350%); }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            #boot .boot-bar::after { animation: none; }
+          }
+        </style>
+        <div class="boot-mark">A</div>
+        <div class="boot-bar"></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
