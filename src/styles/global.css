@@ -107,17 +107,16 @@ code { font-family: var(--font-mono); }
 .katex { color: var(--text-1); font-size: 1.02em; }
 .katex-display { margin: 0; }
 
-/* ── 代码块横向滚动提示：常显细滚动条（P2-5） ── */
-.shiki-host, .code-scroll {
+/* ── 全站滚动条：跟随日/夜主题（此前仅代码块样式化，TOC/搜索等面板落到 UA 默认黑） ── */
+html {
   scrollbar-width: thin;
-  scrollbar-color: var(--divider) transparent;
+  scrollbar-color: var(--scroll-thumb) transparent; /* 标准属性可继承：Firefox/Chrome 全站生效 */
 }
-.shiki-host::-webkit-scrollbar, .code-scroll::-webkit-scrollbar { height: 6px; }
-.shiki-host::-webkit-scrollbar-track, .code-scroll::-webkit-scrollbar-track { background: transparent; }
-.shiki-host::-webkit-scrollbar-thumb, .code-scroll::-webkit-scrollbar-thumb {
-  background: var(--divider);
-  border-radius: 3px;
-}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+::-webkit-scrollbar-corner { background: transparent; }
 
 /* ── 文本划选：品牌橙（此前为 UA 默认灰；DESIGN.md §6 状态矩阵补缺） ── */
 ::selection {

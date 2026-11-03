@@ -60,6 +60,9 @@
   /* 当前上下文章节色（由 data-chapter 挂载；默认=引言） */
   --chapter: oklch(var(--ch-l) var(--ch-c) var(--ch-intro-h));
   --chapter-weak: oklch(from var(--chapter) l c h / 0.14);
+
+  /* 滚动条 thumb（跟随主题；hover 走 --text-3） */
+  --scroll-thumb: var(--brand-gray-mid);
 }
 
 /* ── 暗色主题（墨黑纸白，品牌色互为底字） ── */
@@ -75,6 +78,7 @@
 
   --border: oklch(from var(--brand-light) l c h / 0.14);
   --divider: oklch(from var(--brand-gray-mid) l c h / 0.35);
+  --scroll-thumb: oklch(from var(--brand-gray-mid) calc(l + 0.14) c h / 0.5); /* 暗底提亮保证可见 */
 
   --accent: oklch(0.72 0.10 45);      /* 品牌橙提亮一档 */
   --accent-ink: #141413;
