@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import { Icon, TYPE_ICON, type IconName } from '../components/Icon'
 import { Stars } from '../components/Stars'
 import { CHAPTERS } from '../lib/chapters'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, fill, type Copy } from '../lib/copy'
+import zhIdx from '../content/experiments/index.json'
+import enIdx from '../content/en/experiments/index.json'
 
 interface ExpMeta {
   id: string
@@ -17,13 +21,16 @@ interface ExpMeta {
   status: string | null
 }
 
-import idx from '../content/experiments/index.json'
-const ALL = (idx as { experiments: ExpMeta[] }).experiments
+type IndexFile = { experiments: ExpMeta[] }
+const INDEX: Record<'zh' | 'en', IndexFile> = { zh: zhIdx as IndexFile, en: enIdx as IndexFile }
 
-const TYPE_CN: Record<ExpMeta['type'], string> = { runnable: '可运行', repro: '复现', design: '设计' }
+const TYPE_CN_KEYS: Record<ExpMeta['type'] | 'all', keyof Copy> = {
+  all: 'filterAll', runnable: 'filterRunnable', repro: 'filterRepro', design: 'filterDesign',
+}
 
 /** 台账状态 → 徽章（禁 emoji：图标 + 文字） */
 function StatusBadge({ status }: { status: string | null }) {
+  const t = useCopy()
   if (!status) return null
   const passed = /^Passed/.test(status)
   const cls = passed ? 'ok' : 'warn'
@@ -34,7 +41,7 @@ function StatusBadge({ status }: { status: string | null }) {
       title={status}
     >
       <Icon name={passed ? 'check' : 'clock'} size={11} />
-      {passed ? '已验收' : '部分验收'}
+      {passed ? t.statusPassed : t.statusPartial}
     </span>
   )
 }
@@ -75,6 +82,8 @@ function useFlipGrid(ref: React.RefObject<HTMLDivElement | null>, dep: string) {
 }
 
 export function Experiments() {
+  const t = useCopy()
+  const locale = useLocale()
   const [chapter, setChapter] = useState<number | 'all'>('all')
   const [type, setType] = useState<ExpMeta['type'] | 'all'>('all')
   const [query, setQuery] = useState('')
@@ -82,14 +91,16 @@ export function Experiments() {
   const chipsRef = useRef<HTMLDivElement>(null)
   const [pill, setPill] = useState<{ x: number; w: number } | null>(null)
 
+  const ALL = INDEX[locale].experiments
+
   const list = useMemo(
     () =>
       ALL.filter((e) => chapter === 'all' || e.chapter === chapter)
         .filter((e) => type === 'all' || e.type === type)
         .filter((e) => !query || (e.summary + e.name + e.id).toLowerCase().includes(query.toLowerCase())),
-    [chapter, type, query],
+    [ALL, chapter, type, query],
   )
-  useFlipGrid(gridRef, `${chapter}|${type}|${query}`)
+  useFlipGrid(gridRef, `${locale}|${chapter}|${type}|${query}`)
 
   // 滑动指示 pill：测量活动 chip 的几何
   useLayoutEffect(() => {
@@ -106,11 +117,14 @@ export function Experiments() {
     <div className="rise-in mx-auto max-w-5xl">
       <header className="py-4">
         <p className="font-mono text-xs uppercase tracking-[0.25em] text-t3">Experiments</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">实验库</h1>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">{t.navExperiments}</h1>
         <p className="mt-2 text-t2">
-          全书 {ALL.length} 项配套实验：{ALL.filter((e) => e.type === 'runnable').length} 可运行 ·{' '}
-          {ALL.filter((e) => e.type === 'repro').length} 外部复现 · {ALL.filter((e) => e.type === 'design').length} 设计文档。
-          台账状态如实呈现，包括负结果。
+          {fill(t.expLibDesc, {
+            total: ALL.length,
+            runnable: ALL.filter((e) => e.type === 'runnable').length,
+            repro: ALL.filter((e) => e.type === 'repro').length,
+            design: ALL.filter((e) => e.type === 'design').length,
+          })}
         </p>
       </header>
 
@@ -121,22 +135,22 @@ export function Experiments() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜索实验…"
+            placeholder={t.searchExpPlaceholder}
             className="h-8 w-44 rounded-full border border-line bg-surface pl-8 pr-3 text-sm outline-none placeholder:text-t3 focus:border-accent"
           />
         </label>
         <select
           value={chapter}
           onChange={(e) => setChapter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-          aria-label="按章节筛选"
+          aria-label={t.ariaFilterChapter}
           className="h-8 rounded-full border border-line bg-surface px-3 text-sm outline-none focus:border-accent"
         >
-          <option value="all">全部章节</option>
+          <option value="all">{t.filterAllChapters}</option>
           {CHAPTERS.filter((c) => c.n !== null).map((c) => (
-            <option key={c.slug} value={c.n as number}>第 {c.n} 章 · {c.title}</option>
+            <option key={c.slug} value={c.n as number}>{fill(t.chapterN, { n: c.n as number })} · {c.title}</option>
           ))}
         </select>
-        <div role="group" aria-label="按类型筛选" ref={chipsRef} className="relative flex gap-1">
+        <div role="group" aria-label={t.ariaFilterType} ref={chipsRef} className="relative flex gap-1">
           {pill && (
             <span
               aria-hidden
@@ -148,21 +162,21 @@ export function Experiments() {
               }}
             />
           )}
-          {(['all', 'runnable', 'repro', 'design'] as const).map((t) => (
+          {(['all', 'runnable', 'repro', 'design'] as const).map((k) => (
             <button
-              key={t}
+              key={k}
               type="button"
-              aria-pressed={type === t}
-              onClick={() => setType(t)}
+              aria-pressed={type === k}
+              onClick={() => setType(k)}
               className={`relative rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-[var(--dur-instant)] ${
-                type === t ? 'border-transparent text-[var(--accent-ink)]' : 'border-line text-t2 hover:text-t1'
+                type === k ? 'border-transparent text-[var(--accent-ink)]' : 'border-line text-t2 hover:text-t1'
               }`}
             >
-              {t === 'all' ? '全部' : TYPE_CN[t]}
+              {t[TYPE_CN_KEYS[k]]}
             </button>
           ))}
         </div>
-        <span className="ml-auto font-mono text-xs text-t3">{list.length} 项</span>
+        <span className="ml-auto font-mono text-xs text-t3">{fill(t.nItems, { n: list.length })}</span>
       </div>
 
       {/* 实验卡片网格 */}
@@ -170,7 +184,7 @@ export function Experiments() {
         {list.map((e) => (
           <Link
             key={e.id}
-            to={`/experiments/${e.id}`}
+            to={localePath(`/experiments/${e.id}`, locale)}
             viewTransition
             data-flip-key={e.id}
             data-chapter={String(e.chapter)}
@@ -190,16 +204,21 @@ export function Experiments() {
             </div>
             <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-relaxed text-t2">{e.summary || e.name}</p>
             <p className="mt-2 font-mono text-[11px] text-t3">
-              {e.path ?? '正文实验（无独立项目）'}
+              {e.path ?? t.inlineExpCard}
             </p>
           </Link>
         ))}
       </div>
       {list.length === 0 && (
         <div className="py-20 text-center text-t3">
-          没有匹配的实验。
-          <button type="button" onClick={() => { setQuery(''); setChapter('all'); setType('all') }} className="u-link ml-1" style={{ color: 'var(--accent)' }}>
-            放宽筛选
+          {t.emptyFiltered}
+          <button
+            type="button"
+            onClick={() => { setQuery(''); setChapter('all'); setType('all') }}
+            className="u-link ml-1"
+            style={{ color: 'var(--accent)' }}
+          >
+            {t.relaxFilters}
           </button>
         </div>
       )}

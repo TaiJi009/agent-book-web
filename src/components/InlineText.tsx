@@ -1,8 +1,12 @@
 import { Link } from 'react-router-dom'
 import type { Inline } from '../lib/types'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy } from '../lib/copy'
 
 /** 行内描述符渲染（抽取器产物，运行期零 markdown 依赖） */
 export function InlineText({ nodes }: { nodes: Inline[] }) {
+  const t = useCopy()
+  const locale = useLocale()
   return (
     <>
       {nodes.map((n, i) => {
@@ -44,11 +48,12 @@ export function InlineText({ nodes }: { nodes: Inline[] }) {
                   type="button"
                   onClick={() => {
                     document.getElementById(`fn-${n.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    history.replaceState(null, '', `#/chapter/${window.location.hash.match(/^#\/chapter\/([^#?]+)/)?.[1] ?? ''}`)
+                    const route = window.location.hash.match(/^#(?:\/en)?\/chapter\/([^#?]+)/)?.[1] ?? ''
+                    history.replaceState(null, '', `#${localePath(`/chapter/${route}`, locale)}`)
                   }}
                   className="cursor-help font-mono text-[0.72em] transition-colors"
                   style={{ color: 'var(--accent)' }}
-                  title={`脚注 [${n.id}]`}
+                  title={`${t.fnTitle} [${n.id}]`}
                 >
                   [{n.id}]
                 </button>

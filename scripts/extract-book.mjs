@@ -2,12 +2,14 @@
 /**
  * extract-book.mjs — 书稿正文抽取管线（PLAN.md §4）
  *
- * book/*.md（pandoc 方言）→ src/content/chapters/*.json
+ * 用法：node scripts/extract-book.mjs [--locale=en]
+ *   默认 zh：book/*.md（pandoc 方言）→ src/content/chapters/*.json
+ *   en：book-en/*.md → src/content/en/chapters/*.json，图片 → public/images/book-en/
  * 审计原则：任何未识别节点 fail-fast，杜绝静默丢内容。
  *
  * 处理范围（对照 PLAN.md 数据模型）：
- *   标题({.unnumbered} 清洗) / 段落 / 引用块 / 实验块(> **实验 X-Y …**)
- *   提示块(> **XX提示/导读**) / 代码围栏(Shiki 双主题预着色) / 图片({height=} 清洗)
+ *   标题({.unnumbered} 清洗) / 段落 / 引用块 / 实验块(> **实验|Experiment X-Y …**)
+ *   提示块(> **阅读提示…|Reading Tip…**) / 代码围栏(Shiki 双主题预着色) / 图片({height=} 清洗)
  *   表格 / 数学($$…$$，KaTeX 构建期渲染) / 脚注([^id] 正则预处理) / 链接(内链→路由)
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
@@ -23,9 +25,27 @@ import { createHighlighter } from 'shiki'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const BOOK = resolve(ROOT, '../Book/AI-Agents-in-Depth')
-const BOOKMD = join(BOOK, 'book')
-const OUT = join(ROOT, 'src/content/chapters')
-const IMG_OUT = join(ROOT, 'public/images/book')
+const LOCALE = process.argv.find((a) => a.startsWith('--locale='))?.split('=')[1] === 'en' ? 'en' : 'zh'
+const BOOKMD = join(BOOK, LOCALE === 'en' ? 'book-en' : 'book')
+const OUT = LOCALE === 'en' ? join(ROOT, 'src/content/en/chapters') : join(ROOT, 'src/content/chapters')
+const IMG_OUT = LOCALE === 'en' ? join(ROOT, 'public/images/book-en') : join(ROOT, 'public/images/book')
+const IMG_PREFIX = LOCALE === 'en' ? 'images/book-en/' : 'images/book/'
+
+/* ── 语言模式表：实验块/提示块/思考题标题的 zh|en 识别 ── */
+const PATTERNS = LOCALE === 'en'
+  ? {
+      experiment: /^Experiment\s*(\d+)-(\d+)/,
+      // book-en 提示类引用块头（大小写不定，label 取实际匹配文本）
+      hint: /^(Reading Tip|Reading Guide|Reading Note|Technical Note|Supplementary Note|Terminology:|Background:)/i,
+      questions: (text) => /^(Thought Questions|Questions for Reflection)$/.test(text),
+      sourceDir: 'book-en',
+    }
+  : {
+      experiment: /^实验\s*(\d+)-(\d+)/,
+      hint: /^(阅读提示|本章导读|技术门槛提示|术语说明|阅读指引|前言提示|背景：)/,
+      questions: (text) => text === '思考题',
+      sourceDir: 'book',
+    }
 
 const SHIKI_LANGS = [
   'python', 'javascript', 'typescript', 'tsx', 'json', 'bash', 'yaml', 'text',
@@ -121,8 +141,8 @@ function block(node, audit) {
       // 实验块 / 提示块识别（strong 节点已被 textOf 剥掉 **，直接匹配纯文本）
       const first = node.children[0]
       const headText = first?.children?.map((c) => textOf(c)).join('') ?? ''
-      const exp = headText.match(/^实验\s*(\d+)-(\d+)/)
-      const hint = headText.match(/^(阅读提示|本章导读|技术门槛提示|术语说明|阅读指引|前言提示|背景：)/)
+      const exp = headText.match(PATTERNS.experiment)
+      const hint = headText.match(PATTERNS.hint)
       if (exp) {
         const [_, ch, no] = exp
         const stars = (headText.match(/★/g) || []).length
@@ -200,7 +220,8 @@ function resolveLink(url) {
   const m = url.match(/^(chapter\d+|introduction|afterword)\.md(#.*)?$/)
   if (m) {
     const slug = m[1] === 'introduction' ? 'intro' : m[1] === 'afterword' ? 'outro' : m[1].replace('chapter', '')
-    return `#/chapter/${slug}${m[2] ?? ''}`
+    // en 章节内链带 /en 前缀，站内路由随语言走
+    return `#${LOCALE === 'en' ? '/en' : ''}/chapter/${slug}${m[2] ?? ''}`
   }
   if (/^https?:/.test(url) || url.startsWith('#') || url.startsWith('mailto:')) return url
   auditGlobals.unknownLinks.push(url)
@@ -208,7 +229,7 @@ function resolveLink(url) {
 }
 
 function imgSrc(url) {
-  return url.replace(/^images\//, 'images/book/')
+  return url.replace(/^images\//, IMG_PREFIX)
 }
 
 let katexWarned = 0
@@ -244,7 +265,7 @@ for (const f of readdirSync(join(BOOKMD, 'images'))) {
     copied++
   }
 }
-console.log(`images: 复制 ${copied} 张到 public/images/book/`)
+console.log(`images: 复制 ${copied} 张到 ${IMG_OUT.replace(ROOT + '/', '')}/`)
 
 const auditGlobals = { unknownLinks: [] }
 let totalUnknown = 0
@@ -267,7 +288,7 @@ for (const { slug, file } of FILES) {
       headingSeq++
       b.id = `h-${b.depth}-${headingSeq}`
       if (b.depth <= 3) toc.push({ id: b.id, depth: b.depth, text: b.text })
-      if (b.text === '思考题') questionsMode = true
+      if (PATTERNS.questions(b.text)) questionsMode = true
       else if (b.depth <= 2) questionsMode = false
     }
     if (b.kind === 'experiment') {
@@ -308,11 +329,14 @@ for (const { slug, file } of FILES) {
   }
 
   const cjkChars = (raw.match(/[\u4e00-\u9fff]/g) || []).length
+  // zh 文档保持 cjkChars 字段（历史兼容）；en 按词数计（朗读速度 ~220 wpm）
+  const wordCount = LOCALE === 'en' ? (raw.match(/[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?/g) || []).length : undefined
   const doc = {
-    slug, sourceFile: `book/${file}`, sourceCommit,
+    slug, sourceFile: `${PATTERNS.sourceDir}/${file}`, sourceCommit,
     title: chapterTitle || file,
     blocks, toc: toc.filter((h) => h.depth >= 2), experiments, questions, footnotes,
-    cjkChars, minutes: Math.max(1, Math.round(cjkChars / 400)),
+    ...(LOCALE === 'en' ? { wordCount } : { cjkChars }),
+    minutes: Math.max(1, Math.round((LOCALE === 'en' ? wordCount / 220 : cjkChars / 400))),
   }
   writeFileSync(join(OUT, `ch-${slug}.json`), JSON.stringify(doc))
 
@@ -320,7 +344,7 @@ for (const { slug, file } of FILES) {
   totalUnknown += unknownCount
   console.log(
     `ch-${slug}: blocks=${blocks.length} toc=${toc.length} exp=${experiments.length} fn=${footnotes.length}` +
-      ` chars=${cjkChars}${unknownCount ? `  ⚠️ 未识别=${unknownCount}` : ''}`,
+      ` ${LOCALE === 'en' ? `words=${wordCount}` : `chars=${cjkChars}`}${unknownCount ? `  ⚠️ 未识别=${unknownCount}` : ''}`,
   )
   if (unknownCount) {
     console.log('  unknown:', JSON.stringify({ ...audit, unknown: audit.unknown.slice(0, 8), unknownInline: audit.unknownInline.slice(0, 8) }))

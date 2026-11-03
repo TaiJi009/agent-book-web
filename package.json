@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "build:single": "tsc -b && vite build --mode single",
     "preview": "vite preview",
-    "content": "node scripts/extract-book.mjs && node scripts/extract-experiments.mjs && node scripts/build-search-index.mjs && node scripts/build-walkthroughs.mjs && node scripts/build-reference.mjs"
+    "content": "node scripts/extract-book.mjs && node scripts/extract-experiments.mjs && node scripts/build-search-index.mjs && node scripts/build-walkthroughs.mjs && node scripts/build-reference.mjs",
+    "content:en": "node scripts/extract-book.mjs --locale=en && node scripts/extract-experiments.mjs --locale=en && node scripts/build-search-index.mjs --locale=en && node scripts/build-walkthroughs.mjs --locale=en && node scripts/build-reference.mjs"
   },
   "dependencies": {
     "react": "^19.1.0",

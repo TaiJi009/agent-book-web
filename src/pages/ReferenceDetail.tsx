@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, fill } from '../lib/copy'
 
 interface RefLink { kind: 'chapter' | 'walkthrough' | 'experiments'; ch?: number; slug?: string; label: string }
 interface RefGroup { name: string; note?: string; items: string[] }
@@ -11,21 +13,27 @@ interface RefProject {
 }
 interface RefStat { label: string; value: string }
 
-const index = import.meta.glob<{ default: unknown }>('../content/reference/index.json')
+const index = import.meta.glob<{ default: unknown }>([
+  '../content/reference/index.json',
+  '../content/en/reference/index.json',
+])
 
 export function ReferenceDetail() {
   const { projectId = '' } = useParams()
+  const locale = useLocale()
+  const t = useCopy()
   const [projects, setProjects] = useState<RefProject[] | null>(null)
 
   useEffect(() => {
     let alive = true
     setProjects(null)
-    index['../content/reference/index.json']?.().then((m) => {
+    const key = locale === 'en' ? '../content/en/reference/index.json' : '../content/reference/index.json'
+    index[key]?.().then((m) => {
       const d = m.default as { projects: RefProject[] }
       if (alive) setProjects(d.projects)
     })
     return () => { alive = false }
-  }, [])
+  }, [locale])
 
   const doc = projects?.find((p) => p.id === projectId)
 
@@ -44,8 +52,8 @@ export function ReferenceDetail() {
 
   return (
     <div className="rise-in mx-auto max-w-3xl pb-16">
-      <nav aria-label="面包屑" className="flex items-center gap-2 pt-4 font-mono text-xs text-t3">
-        <Link to="/reference" viewTransition className="u-link hover:text-t1">参考项目</Link>
+      <nav aria-label={t.ariaBreadcrumb} className="flex items-center gap-2 pt-4 font-mono text-xs text-t3">
+        <Link to={localePath('/reference', locale)} viewTransition className="u-link hover:text-t1">{t.navReference}</Link>
         <span>/</span>
         <span>{doc.id}</span>
       </nav>
@@ -78,8 +86,10 @@ export function ReferenceDetail() {
       {doc.groups && (
         <section className="py-5">
           <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">
-            包族地图
-            <span className="ml-2 font-mono text-xs font-normal text-t3">{doc.groups.reduce((n, g) => n + g.items.length, 0)} 个包族 · {doc.groups.length} 组</span>
+            {t.groupMapTitle}
+            <span className="ml-2 font-mono text-xs font-normal text-t3">
+              {fill(t.groupMapCount, { n: doc.groups.reduce((n, g) => n + g.items.length, 0), m: doc.groups.length })}
+            </span>
           </h2>
           <div className="space-y-3">
             {doc.groups.map((g) => (
@@ -101,7 +111,7 @@ export function ReferenceDetail() {
 
       {doc.modules && (
         <section className="py-5">
-          <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">模块导览</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">{t.moduleTourTitle}</h2>
           <div className="overflow-hidden rounded-xl border border-line">
             {doc.modules.map((m, i) => (
               <div key={i} className="flex flex-col gap-1 border-b border-line bg-surface px-4 py-3 last:border-b-0 sm:flex-row sm:items-baseline sm:gap-4">
@@ -115,12 +125,18 @@ export function ReferenceDetail() {
 
       {doc.links.length > 0 && (
         <section className="py-5">
-          <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">与书稿对照</h2>
+          <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">{t.crossRefTitle}</h2>
           <ul className="space-y-2">
             {doc.links.map((l, i) => (
               <li key={i}>
                 <Link
-                  to={l.kind === 'chapter' ? `/chapter/${l.ch}` : l.kind === 'walkthrough' ? `/walkthroughs/${l.slug}` : '/experiments'}
+                  to={
+                    l.kind === 'chapter'
+                      ? localePath(`/chapter/${l.ch}`, locale)
+                      : l.kind === 'walkthrough'
+                        ? localePath(`/walkthroughs/${l.slug}`, locale)
+                        : localePath('/experiments', locale)
+                  }
                   viewTransition
                   className="group flex items-baseline gap-3 rounded-lg border border-line bg-surface px-4 py-2.5 transition-colors hover:border-accent"
                 >
@@ -128,10 +144,10 @@ export function ReferenceDetail() {
                     <span className="shrink-0 font-mono text-[11px] text-t3">ch{l.ch}</span>
                   )}
                   {l.kind === 'walkthrough' && (
-                    <span className="shrink-0 font-mono text-[11px] text-t3">讲解</span>
+                    <span className="shrink-0 font-mono text-[11px] text-t3">{t.linkWalkthrough}</span>
                   )}
                   {l.kind === 'experiments' && (
-                    <span className="shrink-0 font-mono text-[11px] text-t3">实验</span>
+                    <span className="shrink-0 font-mono text-[11px] text-t3">{t.linkExperiment}</span>
                   )}
                   <span className="text-sm text-t2 group-hover:text-t1">{l.label}</span>
                 </Link>
@@ -142,7 +158,7 @@ export function ReferenceDetail() {
       )}
 
       <p className="mt-8 border-t border-line pt-4 font-mono text-xs leading-relaxed text-t3">
-        仓库位置：{doc.repoPath}
+        {fill(t.repoLocation, { path: doc.repoPath })}
       </p>
     </div>
   )

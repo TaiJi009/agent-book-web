@@ -1,39 +1,51 @@
-import glossaryData from '../content/glossary.json'
 import { Link } from 'react-router-dom'
 import { CHAPTERS } from '../lib/chapters'
 import { Icon } from '../components/Icon'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, fill } from '../lib/copy'
+import zhGlossary from '../content/glossary.json'
+import enGlossary from '../content/en/glossary.json'
 
 interface Term { id: string; term: string; en: string; def: string; chapters: string[] }
-const TERMS = (glossaryData as { terms: Term[] }).terms
+type GlossaryFile = { terms: Term[] }
+const GLOSSARY: Record<'zh' | 'en', GlossaryFile> = {
+  zh: zhGlossary as GlossaryFile,
+  en: enGlossary as GlossaryFile,
+}
 
 export function Glossary() {
+  const t = useCopy()
+  const locale = useLocale()
+  const TERMS = GLOSSARY[locale].terms
   return (
     <div className="rise-in mx-auto max-w-3xl">
       <header className="py-4">
         <p className="font-mono text-xs uppercase tracking-[0.25em] text-t3">Glossary</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">术语表</h1>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight">{t.navGlossary}</h1>
         <p className="mt-2 text-t2">
-          全书 {TERMS.length} 个关键概念，每条附出处章节。也可通过 <kbd className="rounded border border-line px-1 font-mono text-xs">⌘K</kbd> 搜索直达。
+          {fill(t.glossaryDesc, { n: TERMS.length })}{' '}
+          <kbd className="rounded border border-line px-1 font-mono text-xs">⌘K</kbd>{' '}
+          {t.glossarySearchTail}
         </p>
       </header>
 
       <div className="space-y-3">
-        {TERMS.map((t) => (
+        {TERMS.map((term) => (
           <article
-            key={t.id}
-            id={`term-${t.id}`}
+            key={term.id}
+            id={`term-${term.id}`}
             className="scroll-mt-24 rounded-xl border border-line bg-surface p-5 transition-colors duration-[var(--dur-instant)] hover:border-accent"
           >
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h2 className="font-display text-base font-semibold tracking-tight">{t.term}</h2>
-              <span className="font-mono text-xs text-t3">{t.en}</span>
+              <h2 className="font-display text-base font-semibold tracking-tight">{term.term}</h2>
+              {term.term !== term.en && <span className="font-mono text-xs text-t3">{term.en}</span>}
               <span className="ml-auto flex flex-wrap gap-1.5">
-                {t.chapters.map((c) => {
+                {term.chapters.map((c) => {
                   const meta = CHAPTERS.find((m) => m.slug === c)
                   return (
                     <Link
                       key={c}
-                      to={`/chapter/${c}`}
+                      to={localePath(`/chapter/${c}`, locale)}
                       viewTransition
                       data-chapter={c}
                       className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t2 transition-colors hover:text-t1"
@@ -45,14 +57,14 @@ export function Glossary() {
                 })}
               </span>
             </div>
-            <p className="mt-2 text-sm leading-[1.85] text-t2">{t.def}</p>
+            <p className="mt-2 text-sm leading-[1.85] text-t2">{term.def}</p>
           </article>
         ))}
       </div>
 
       <p className="mt-10 flex items-center gap-2 text-sm text-t3">
         <Icon name="arrow-left" size={13} />
-        定义均摘自书稿正文语境；完整论证请进入对应章节阅读。
+        {t.glossaryNote}
       </p>
     </div>
   )

@@ -6,11 +6,15 @@
     <meta name="color-scheme" content="light dark" />
     <title>深入理解 AI Agent · 知识站</title>
     <script>
-      // 首屏前同步设主题，避免闪白（FOUC）
+      // 首屏前同步设主题，避免闪白（FOUC）；en 直链首帧同步 lang/title
       try {
         var t = localStorage.getItem('abw-theme')
         if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme: dark)').matches)) {
           document.documentElement.dataset.theme = 'dark'
+        }
+        if (location.hash.indexOf('#/en') === 0) {
+          document.documentElement.lang = 'en'
+          document.title = 'AI Agents in Depth · Knowledge Site'
         }
       } catch (e) {}
     </script>

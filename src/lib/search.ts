@@ -1,4 +1,4 @@
-/** 客户端 bigram 检索（索引由 build-search-index.mjs 构建期生成） */
+/** 客户端 bigram 检索（索引由 build-search-index.mjs 构建期生成，按语言各一份） */
 
 export interface SearchDoc {
   id: string
@@ -10,24 +10,28 @@ export interface SearchDoc {
 }
 interface SearchIndexFile { version: number; docs: SearchDoc[]; lists: [string, number[]][] }
 
-let cache: Promise<{ docs: SearchDoc[]; map: Map<string, number[]> }> | null = null
+type Cache = Promise<{ docs: SearchDoc[]; map: Map<string, number[]> }>
+const cache: Record<'zh' | 'en', Cache | null> = { zh: null, en: null }
 
-async function load() {
-  if (!cache) {
-    cache = import('../content/search-index.json').then((m) => {
+function load(locale: 'zh' | 'en'): Cache {
+  if (!cache[locale]) {
+    const src = locale === 'en'
+      ? import('../content/en/search-index.json')
+      : import('../content/search-index.json')
+    cache[locale] = src.then((m) => {
       const idx = m.default as unknown as SearchIndexFile
       return { docs: idx.docs, map: new Map(idx.lists) }
     })
   }
-  return cache
+  return cache[locale]
 }
 
-/** 闲时预载索引：首次 ⌘K 不必等 458KB chunk（SiteLayout 在 requestIdleCallback 调用） */
-export function preloadSearchIndex() {
-  void load()
+/** 闲时预载当前语言索引：首次 ⌘K 不必等索引 chunk（SiteLayout 在 requestIdleCallback 调用） */
+export function preloadSearchIndex(locale: 'zh' | 'en' = 'zh') {
+  void load(locale)
 }
 
-/** 查询文本 → bigram 集合（与构建期同规则） */
+/** 查询文本 → bigram 集合（与构建期同规则：中文按字 bigram，拉丁按词） */
 function queryBigrams(q: string): Set<string> {
   const set = new Set<string>()
   const t = q.toLowerCase().trim()
@@ -41,10 +45,10 @@ function queryBigrams(q: string): Set<string> {
 
 export interface Hit extends SearchDoc { score: number }
 
-export async function search(query: string, limit = 12): Promise<Hit[]> {
+export async function search(query: string, locale: 'zh' | 'en' = 'zh', limit = 12): Promise<Hit[]> {
   const q = query.trim()
   if (q.length < 2) return []
-  const { docs, map } = await load()
+  const { docs, map } = await load(locale)
   const qg = queryBigrams(q)
   if (qg.size === 0) return []
 

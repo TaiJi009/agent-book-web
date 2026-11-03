@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { search, type Hit } from '../lib/search'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, type Copy } from '../lib/copy'
 import { Icon } from './Icon'
 
-const TYPE_LABEL = { section: '章节', experiment: '实验', term: '术语' } as const
+const TYPE_LABEL_KEY = { section: 'typeSection', experiment: 'typeExperiment', term: 'typeTerm' } as const satisfies Record<Hit['type'], keyof Copy>
 const TYPE_ICON = { section: 'book-open', experiment: 'beaker', term: 'layers' } as const
 
 export function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -14,6 +16,8 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   const [busy, setBusy] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const locale = useLocale()
+  const t = useCopy()
 
   useEffect(() => {
     if (open) {
@@ -26,21 +30,21 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
     if (!open) return
     setBusy(true)
     let alive = true
-    const t = setTimeout(async () => {
-      const r = await search(q)
+    const timer = setTimeout(async () => {
+      const r = await search(q, locale)
       if (!alive) return
       setHits(r); setSel(0); setBusy(false)
     }, 120)
-    return () => { alive = false; clearTimeout(t) }
-  }, [q, open])
+    return () => { alive = false; clearTimeout(timer) }
+  }, [q, open, locale])
 
   const go = (h: Hit | undefined) => {
     if (!h) return
     onClose()
     if (h.type === 'section' || h.type === 'term') {
-      navigate(`/chapter/${h.chapter}#${h.anchor}`)
+      navigate(`${localePath(`/chapter/${h.chapter}`, locale)}#${h.anchor}`)
     } else {
-      navigate(`/experiments/${h.id.replace('exp-', '')}`)
+      navigate(localePath(`/experiments/${h.id.replace('exp-', '')}`, locale))
     }
   }
 
@@ -59,7 +63,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   if (!open) return null
   return createPortal(
     <div
-      role="dialog" aria-modal="true" aria-label="全局搜索"
+      role="dialog" aria-modal="true" aria-label={t.ariaGlobalSearch}
       className="fixed inset-0 z-[80] flex items-start justify-center pt-[12vh]"
       style={{ background: 'var(--overlay)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}
@@ -75,19 +79,19 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
             ref={inputRef}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="搜索章节、实验、术语…"
-            aria-label="搜索"
+            placeholder={t.searchPlaceholder}
+            aria-label={t.ariaSearch}
             className="h-12 flex-1 bg-transparent font-body text-[15px] outline-none placeholder:text-t3"
           />
           <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] text-t3">ESC</kbd>
         </div>
 
-        <div className="max-h-[52vh] overflow-y-auto p-2" role="listbox" aria-label="搜索结果">
+        <div className="max-h-[52vh] overflow-y-auto p-2" role="listbox" aria-label={t.ariaSearchResults}>
           {q.trim().length >= 2 && !busy && hits.length === 0 && (
-            <p className="px-3 py-8 text-center text-sm text-t3">没有匹配结果——试试更短的关键词。</p>
+            <p className="px-3 py-8 text-center text-sm text-t3">{t.noResults}</p>
           )}
           {q.trim().length < 2 && (
-            <p className="px-3 py-8 text-center text-sm text-t3">输入至少两个字符开始检索全书、实验库与术语表。</p>
+            <p className="px-3 py-8 text-center text-sm text-t3">{t.searchHint}</p>
           )}
           {hits.map((h, i) => (
             <button
@@ -105,15 +109,15 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                 <span className="mt-0.5 block truncate text-xs text-t3">{h.text.slice(0, 90)}</span>
               </span>
               <span className="ml-auto shrink-0 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t3">
-                {TYPE_LABEL[h.type]}{h.type === 'section' ? ` · ch${h.chapter}` : ''}
+                {t[TYPE_LABEL_KEY[h.type]]}{h.type === 'section' ? ` · ch${h.chapter}` : ''}
               </span>
             </button>
           ))}
         </div>
 
         <div className="flex items-center gap-3 border-t border-line px-4 py-2 font-mono text-[10px] text-t3">
-          <span>↑↓ 选择</span><span>Enter 跳转</span><span>Esc 关闭</span>
-          <span className="ml-auto">bigram 全文检索 · 纯前端</span>
+          <span>{t.keySelect}</span><span>{t.keyGo}</span><span>{t.keyClose}</span>
+          <span className="ml-auto">{t.searchEngineNote}</span>
         </div>
       </div>
     </div>,

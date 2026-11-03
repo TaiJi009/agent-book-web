@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useCopy } from '../lib/copy'
 
 /**
  * 复制代码按钮：图标 swap（copy → check 勾 stroke 绘制 240ms，2s 还原）。
@@ -7,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 export function CopyCodeButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   const timer = useRef<number>(0)
+  const t = useCopy()
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
@@ -31,7 +33,7 @@ export function CopyCodeButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      aria-label={copied ? '已复制' : '复制代码'}
+      aria-label={copied ? t.copied : t.copyCode}
       className="press grid size-7 shrink-0 place-items-center rounded-md text-t3 transition-colors duration-[var(--dur-instant)] hover:text-accent"
     >
       {copied ? (

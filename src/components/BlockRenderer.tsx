@@ -4,9 +4,11 @@ import type { Block } from '../lib/types'
 import { InlineText } from './InlineText'
 import { Stars } from './Stars'
 import { Icon } from './Icon'
+import { useCopy, fill } from '../lib/copy'
 
 /* ── 图片灯箱：点击放大，Esc/点击关闭 ── */
 function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const t = useCopy()
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     document.addEventListener('keydown', onKey)
@@ -18,7 +20,7 @@ function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: ()
   }, [onClose])
   return createPortal(
     <div
-      role="dialog" aria-modal="true" aria-label={alt || '图片放大'}
+      role="dialog" aria-modal="true" aria-label={alt || t.zoomImage}
       className="fixed inset-0 z-[90] grid place-items-center p-6"
       style={{ background: 'var(--overlay)', backdropFilter: 'blur(8px)' }}
       onClick={onClose}
@@ -31,12 +33,13 @@ function Lightbox({ src, alt, onClose }: { src: string; alt: string; onClose: ()
 
 export function Figure({ src, alt }: { src: string; alt: string }) {
   const [open, setOpen] = useState(false)
+  const t = useCopy()
   return (
     <figure className="my-6 text-center">
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={alt ? `放大图片：${alt}` : '放大图片'}
+        aria-label={alt ? fill(t.ariaZoomWithAlt, { alt }) : t.ariaZoomImage}
         className="block w-full cursor-zoom-in"
       >
         <img src={src} alt={alt} loading="lazy" className="mx-auto max-w-full rounded-lg border border-line bg-surface" />
@@ -50,6 +53,7 @@ export function Figure({ src, alt }: { src: string; alt: string }) {
 /* ── 实验卡：折叠正文，渐进披露 ── */
 export function ExperimentCard({ block }: { block: Extract<Block, { kind: 'experiment' }> }) {
   const [open, setOpen] = useState(false)
+  const t = useCopy()
   return (
     <aside
       id={`exp-${block.id}`}
@@ -63,10 +67,10 @@ export function ExperimentCard({ block }: { block: Extract<Block, { kind: 'exper
         className="flex w-full items-center gap-3 px-5 py-4 pl-6 text-left"
       >
         <span className="shrink-0 rounded-md bg-accent-weak px-2 py-0.5 font-mono text-xs font-medium" style={{ color: 'var(--accent)' }}>
-          实验 {block.id}
+          {fill(t.expBadge, { id: block.id })}
         </span>
         <span className="font-display text-sm font-semibold">{block.title}</span>
-        <span data-stars={block.stars} title={`难度 ${block.stars} 星`}>
+        <span data-stars={block.stars} title={fill(t.ariaStars, { n: block.stars })}>
           {block.stars > 0 && (open
             ? <Stars key="star-pop" n={block.stars} pop />
             : <Stars n={block.stars} />)}
@@ -118,7 +122,7 @@ export function BlockView({ block, nested = false }: { block: Block; nested?: bo
       return <Tag id={block.id} className={cls}>{block.text}</Tag>
     }
     case 'p':
-      return <p className={`leading-[1.92] text-t1 ${nested ? 'my-2' : 'my-4'}`}><InlineText nodes={block.c} /></p>
+      return <p className={`leading-[var(--leading-prose)] text-t1 ${nested ? 'my-2' : 'my-4'}`}><InlineText nodes={block.c} /></p>
     case 'quote':
       return (
         <blockquote className="my-4 border-l-2 border-divider pl-4 text-t2">

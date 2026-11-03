@@ -13,6 +13,7 @@ import { ReferenceDetail } from './pages/ReferenceDetail'
 import { Learning } from './pages/Learning'
 import { Placeholder } from './pages/Placeholder'
 
+/* 语言路由：zh 在根，en 镜像在 /en 前缀下（#/en/… 可分享）；组件内经 useLocale() 取语言 */
 const router = createHashRouter([
   {
     element: <SiteLayout />,
@@ -28,7 +29,17 @@ const router = createHashRouter([
       { path: '/reference/:projectId', element: <ReferenceDetail /> },
       { path: '/learning', element: <Learning /> },
       { path: '/glossary', element: <Glossary /> },
-      { path: '*', element: <Placeholder title="Agent 走丢了" note="404 · 这个路径不在上下文里" /> },
+      { path: '/en', element: <Home /> },
+      { path: '/en/chapter/:slug', element: <Chapter /> },
+      { path: '/en/experiments', element: <Experiments /> },
+      { path: '/en/experiments/:id', element: <ExperimentDetail /> },
+      { path: '/en/walkthroughs', element: <Walkthroughs /> },
+      { path: '/en/walkthroughs/:slug', element: <WalkthroughDetail /> },
+      { path: '/en/reference', element: <Reference /> },
+      { path: '/en/reference/:projectId', element: <ReferenceDetail /> },
+      { path: '/en/learning', element: <Learning /> },
+      { path: '/en/glossary', element: <Glossary /> },
+      { path: '*', element: <Placeholder /> },
     ],
   },
 ])

@@ -22,3 +22,19 @@ export const CHAPTERS: ChapterMeta[] = [
 ]
 
 export const TOTAL_EXPERIMENTS = CHAPTERS.reduce((s, c) => s + c.experiments, 0)
+
+/** 英文章元数据：title 取自 book-en 各章 H1（快照 commit 6da8917c），tagline 为中文版对应意译 */
+export const CHAPTERS_EN: ChapterMeta[] = [
+  { slug: 'intro', n: null, title: 'Introduction', tagline: 'Practice first, naming later', experiments: 0 },
+  { slug: '1', n: 1, title: 'Getting Started with AI Agents', tagline: 'Agent = LLM + context + tools; harness engineering is the real edge', experiments: 3 },
+  { slug: '2', n: 2, title: 'Context Engineering', tagline: 'Context caps capability: KV Cache, prompting, Skills, compression', experiments: 10 },
+  { slug: '3', n: 3, title: 'User Memory and Knowledge Base', tagline: 'Remember users across sessions; ground answers in external knowledge', experiments: 12 },
+  { slug: '4', n: 4, title: 'Tools', tagline: "Tools are the agent's hands: MCP and five tool families", experiments: 5 },
+  { slug: '5', n: 5, title: 'Coding Agent and Code Generation', tagline: 'Code is the tool that creates new tools', experiments: 13 },
+  { slug: '6', n: 6, title: 'Interaction: Expanding the Observation and Action Spaces', tagline: 'Async, voice, computer use, and robotics', experiments: 13 },
+  { slug: '7', n: 7, title: 'Evaluating Agents', tagline: 'Turn performance into comparable signals', experiments: 13 },
+  { slug: '8', n: 8, title: 'Model Post-Training', tagline: 'SFT memorizes, RL generalizes; data and environments matter more than algorithms', experiments: 19 },
+  { slug: '9', n: 9, title: 'Continual Evolution of Agents', tagline: 'Learn from trajectories; update knowledge, instructions, programs, and parameters', experiments: 9 },
+  { slug: '10', n: 10, title: 'Multi-Agent Collaboration', tagline: 'Collective intelligence beats the individual', experiments: 6 },
+  { slug: 'outro', n: null, title: 'Afterword', tagline: 'Two clouds on the horizon — models and agents evolve together', experiments: 0 },
+]

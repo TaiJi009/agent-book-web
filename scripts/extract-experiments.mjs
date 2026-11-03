@@ -2,9 +2,10 @@
 /**
  * extract-experiments.mjs — 实验库抽取（PLAN.md §4）
  *
- * 输入：各章 README.md 实验清单表 + EXPERIMENT_LEDGER.md 台账 + chapter JSON（星级）
- * 输出：src/content/experiments/index.json（轻量索引，~50KB）
- *      src/content/experiments/exp-<id>.json（详情：README 块 + 白名单代码 Shiki 预着色，路由级懒加载）
+ * 用法：node scripts/extract-experiments.mjs [--locale=en]
+ * 输入：各章 README(.en).md 实验清单表 + EXPERIMENT_LEDGER.md 台账 + chapter JSON（星级/标题）
+ * 输出 zh：src/content/experiments/index.json + exp-<id>.json（详情：README 块 + 白名单代码 Shiki 预着色）
+ * 输出 en：src/content/en/experiments/index.json 仅索引——实验详情上游无英文，英文站复用 zh 详情 JSON
  */
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -18,7 +19,13 @@ import { createHighlighter } from 'shiki'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const BOOK = resolve(ROOT, '../Book/AI-Agents-in-Depth')
-const OUT = join(ROOT, 'src/content/experiments')
+const LOCALE = process.argv.find((a) => a.startsWith('--locale='))?.split('=')[1] === 'en' ? 'en' : 'zh'
+const OUT = LOCALE === 'en' ? join(ROOT, 'src/content/en/experiments') : join(ROOT, 'src/content/experiments')
+const CHAPTERS_SRC = LOCALE === 'en' ? 'src/content/en/chapters' : 'src/content/chapters'
+const README_NAME = LOCALE === 'en' ? 'README.en.md' : 'README.md'
+const TYPE_LABEL = LOCALE === 'en'
+  ? { runnable: 'Runnable', repro: 'Repro', design: 'Design' }
+  : { runnable: '可运行', repro: '复现', design: '设计' }
 
 const mdast = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
 const SHIKI_LANGS = ['python', 'javascript', 'typescript', 'json', 'bash', 'yaml', 'text', 'html', 'css', 'tsx']
@@ -115,23 +122,22 @@ function pickCodeFiles(dir) {
     })
 }
 
-/* ── 1. 章节星级与中文标题（来自正文抽取产物） ── */
+/* ── 1. 章节星级与标题（来自当前语言的正文抽取产物） ── */
 const starsById = new Map()
 const titleById = new Map()
 for (let n = 1; n <= 10; n++) {
   try {
-    const ch = JSON.parse(readFileSync(join(ROOT, `src/content/chapters/ch-${n}.json`), 'utf8'))
+    const ch = JSON.parse(readFileSync(join(ROOT, `${CHAPTERS_SRC}/ch-${n}.json`), 'utf8'))
     for (const e of ch.experiments) { starsById.set(e.id, e.stars); if (e.title) titleById.set(e.id, e.title) }
   } catch { /* 章节缺失则跳过 */ }
 }
 
 /* ── 2. 章 README 实验表 ── */
 const TYPE_MAP = { '✅': 'runnable', '📖': 'repro', '🚧': 'design' }
-const TYPE_LABEL = { runnable: '可运行', repro: '复现', design: '设计' }
 const experiments = new Map() // primaryId → record
 
 for (let n = 1; n <= 10; n++) {
-  const readmePath = join(BOOK, `chapter${n}`, 'README.md')
+  const readmePath = join(BOOK, `chapter${n}`, README_NAME)
   if (!existsSync(readmePath)) continue
   const md = readFileSync(readmePath, 'utf8')
   const rows = md.split('\n').filter((l) => /^\|/.test(l) && /\|\s*(✅|📖|🚧)\s*\|/.test(l))
@@ -199,12 +205,12 @@ for (let n = 1; n <= 10; n++) {
   }
 }
 
-/* ── 4. 详情文件（README 块 + 代码白名单） ── */
+/* ── 4. 详情文件（README 块 + 代码白名单；en 模式跳过——英文站复用 zh 详情 JSON） ── */
 mkdirSync(OUT, { recursive: true })
-const highlighter = await createHighlighter({ themes: ['vitesse-light', 'vitesse-dark'], langs: SHIKI_LANGS })
+const highlighter = LOCALE === 'en' ? null : await createHighlighter({ themes: ['vitesse-light', 'vitesse-dark'], langs: SHIKI_LANGS })
 let detailCount = 0
 
-for (const rec of experiments.values()) {
+for (const rec of LOCALE === 'en' ? [] : experiments.values()) {
   const detail = { ...rec, readme: [], codeFiles: [] }
   if (rec.path) {
     const dir = join(BOOK, rec.path)
@@ -247,5 +253,6 @@ const index = [...experiments.values()]
 writeFileSync(join(OUT, 'index.json'), JSON.stringify({ experiments: index }))
 
 const sourceCommit = execSync(`git -C "${BOOK}" rev-parse --short HEAD`).toString().trim()
-console.log(`✓ 实验库：索引 ${index.length} 项 · 详情 ${detailCount} 个 · 源 commit ${sourceCommit}`)
+const detailNote = LOCALE === 'en' ? '（en 仅索引，详情复用 zh exp-*.json）' : ''
+console.log(`✓ 实验库[${LOCALE}]：索引 ${index.length} 项 · 详情 ${detailCount} 个 ${detailNote}· 源 commit ${sourceCommit}`)
 console.log(`  类型分布:`, index.reduce((m, e) => ((m[e.typeLabel] = (m[e.typeLabel] || 0) + 1), m), {}))

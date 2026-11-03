@@ -132,8 +132,16 @@
   --w-sidebar: 264px;
   --w-toc: 220px;
 
+  /* ── 正文行高（中文调校 1.92；英文按拉丁惯例收紧） ── */
+  --leading-prose: 1.92;
+
   /* ── 圆角 ── */
   --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-full: 999px;
+}
+
+/* 英文 locale：行高收紧（DESIGN.md §3 中文排印规则的拉丁对应） */
+html[lang='en'] {
+  --leading-prose: 1.75;
 }
 
 /* 高对比偏好：结构线增强 */

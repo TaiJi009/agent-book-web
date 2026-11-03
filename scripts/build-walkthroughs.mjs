@@ -2,17 +2,19 @@
 /**
  * build-walkthroughs.mjs — 代码讲解构建（PLAN.md §6）
  * 输入：walkthroughs/*.md（front-matter + 正文 + ```ref path A-B``` 代码引用 + ```svg``` 内联图）
- * 输出：src/content/walkthroughs/index.json + wt-<slug>.json（代码 Shiki 预着色）
+ * 输出 zh：src/content/walkthroughs/index.json + wt-<slug>.json（代码 Shiki 预着色）
+ * 输出 en：--locale=en 读 walkthroughs-en/ → src/content/en/walkthroughs/（ref 代码引用与 zh 共享同一仓库源）
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { execSync } from 'node:child_process'
 import { createHighlighter } from 'shiki'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const SRC = join(ROOT, 'walkthroughs')
+const LOCALE = process.argv.find((a) => a.startsWith('--locale='))?.split('=')[1] === 'en' ? 'en' : 'zh'
+const SRC = join(ROOT, LOCALE === 'en' ? 'walkthroughs-en' : 'walkthroughs')
 const BOOK = resolve(ROOT, '../Book/AI-Agents-in-Depth')
-const OUT = join(ROOT, 'src/content/walkthroughs')
+const OUT = LOCALE === 'en' ? join(ROOT, 'src/content/en/walkthroughs') : join(ROOT, 'src/content/walkthroughs')
 
 const LANGS = ['python', 'typescript', 'json', 'bash', 'text']
 const highlighter = await createHighlighter({ themes: ['vitesse-light', 'vitesse-dark'], langs: LANGS })
@@ -86,7 +88,7 @@ function parseMd(file) {
 }
 
 mkdirSync(OUT, { recursive: true })
-const files = (await import('node:fs')).readdirSync(SRC).filter((f) => f.endsWith('.md'))
+const files = readdirSync(SRC).filter((f) => f.endsWith('.md'))
 const index = []
 const sourceCommit = execSync(`git -C "${BOOK}" rev-parse --short HEAD`).toString().trim()
 
@@ -101,4 +103,4 @@ for (const f of files) {
 
 index.sort((a, b) => a.order - b.order)
 writeFileSync(join(OUT, 'index.json'), JSON.stringify({ walkthroughs: index }))
-console.log(`✓ 代码讲解：${index.length} 篇 · 源 commit ${sourceCommit}`)
+console.log(`✓ 代码讲解[${LOCALE}]：${index.length} 篇 · 源 commit ${sourceCommit}`)

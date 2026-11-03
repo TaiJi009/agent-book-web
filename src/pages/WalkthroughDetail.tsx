@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CHAPTERS } from '../lib/chapters'
 import { CopyCodeButton } from '../components/CopyCodeButton'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, fill } from '../lib/copy'
 
 interface WtCode { kind: 'code'; file: string; from: number; to: number; total: number; html: string }
 interface WtDiagram { kind: 'diagram'; svg: string }
@@ -11,7 +13,12 @@ interface WtDoc {
   chapters: string[]; summary: string; sections: WtSection[]; sourceCommit: string
 }
 
-const modules = import.meta.glob<{ default: WtDoc }>('../content/walkthroughs/wt-*.json')
+const modules = import.meta.glob<{ default: WtDoc }>([
+  '../content/walkthroughs/wt-*.json',
+  '../content/en/walkthroughs/wt-*.json',
+])
+const wtKey = (locale: string, slug: string) =>
+  locale === 'en' ? `../content/en/walkthroughs/wt-${slug}.json` : `../content/walkthroughs/wt-${slug}.json`
 
 /** Shiki html → 纯文本（复制用）：逐行剥 span、还原实体 */
 function htmlToText(html: string): string {
@@ -22,14 +29,16 @@ function htmlToText(html: string): string {
 
 export function WalkthroughDetail() {
   const { slug = '' } = useParams()
+  const locale = useLocale()
+  const t = useCopy()
   const [doc, setDoc] = useState<WtDoc | null>(null)
 
   useEffect(() => {
     let alive = true
     setDoc(null)
-    modules[`../content/walkthroughs/wt-${slug}.json`]?.().then((m) => alive && setDoc(m.default))
+    modules[wtKey(locale, slug)]?.().then((m) => alive && setDoc(m.default))
     return () => { alive = false }
-  }, [slug])
+  }, [slug, locale])
 
   if (!doc) {
     return (
@@ -46,8 +55,8 @@ export function WalkthroughDetail() {
 
   return (
     <div className="rise-in mx-auto max-w-3xl" data-chapter={doc.chapters[0]}>
-      <nav aria-label="面包屑" className="flex items-center gap-2 pt-4 font-mono text-xs text-t3">
-        <Link to="/walkthroughs" viewTransition className="u-link hover:text-t1">代码讲解</Link>
+      <nav aria-label={t.ariaBreadcrumb} className="flex items-center gap-2 pt-4 font-mono text-xs text-t3">
+        <Link to={localePath('/walkthroughs', locale)} viewTransition className="u-link hover:text-t1">{t.navWalkthroughs}</Link>
         <span>/</span>
         <span>{doc.project}</span>
       </nav>
@@ -56,10 +65,10 @@ export function WalkthroughDetail() {
         <h1 className="font-display text-2xl font-semibold tracking-tight">{doc.title}</h1>
         <p className="mt-2 font-body text-lg text-t2">{doc.subtitle}</p>
         <p className="mt-3 flex flex-wrap items-center gap-1.5 font-mono text-xs text-t3">
-          源项目：
-          <Link to={`/experiments`} viewTransition className="u-link" style={{ color: 'var(--accent)' }}>{doc.project}</Link>
+          {t.sourceProject}
+          <Link to={localePath('/experiments', locale)} viewTransition className="u-link" style={{ color: 'var(--accent)' }}>{doc.project}</Link>
           {doc.chapters.map((c) => (
-            <Link key={c} to={`/chapter/${c}`} viewTransition data-chapter={c}
+            <Link key={c} to={localePath(`/chapter/${c}`, locale)} viewTransition data-chapter={c}
               className="rounded-full border px-2 py-0.5" style={{ borderColor: 'var(--chapter)' }}>
               {CHAPTERS.find((m) => m.slug === c)?.n ? `ch${CHAPTERS.find((m) => m.slug === c)?.n}` : c}
             </Link>
@@ -72,7 +81,7 @@ export function WalkthroughDetail() {
           {s.heading && <h2 className="mb-4 font-display text-xl font-semibold tracking-tight">{s.heading}</h2>}
           {s.blocks.map((b, bi) => {
             if (b.kind === 'p')
-              return <p key={bi} className="my-3 leading-[1.9] text-t2">{b.text}</p>
+              return <p key={bi} className="my-3 leading-[var(--leading-prose)] text-t2">{b.text}</p>
             if (b.kind === 'diagram')
               return (
                 <div key={bi} className="my-5 rounded-xl border border-line bg-surface p-5 text-t2" dangerouslySetInnerHTML={{ __html: b.svg }} />
@@ -86,14 +95,14 @@ export function WalkthroughDetail() {
                       <span className="ml-2 text-t3">L{b.from}–{b.to}</span>
                     </span>
                     <span className="inline-flex items-center gap-2">
-                      <span className="font-mono text-[11px] text-t3">共 {b.total} 行 · 完整源码见仓库</span>
+                      <span className="font-mono text-[11px] text-t3">{fill(t.totalLines, { n: b.total })}</span>
                       <CopyCodeButton text={htmlToText(b.html)} />
                     </span>
                   </div>
                   <div className="shiki-host overflow-x-auto p-4 text-[13.5px] leading-[1.7]" dangerouslySetInnerHTML={{ __html: b.html }} />
                 </div>
                 <figcaption className="mt-2 text-xs text-t3">
-                  行级引用：与仓库 {b.file} 对应行号一致；机制讲解见上方文字。
+                  {fill(t.lineRefNote, { file: b.file })}
                 </figcaption>
               </figure>
             )
@@ -102,7 +111,7 @@ export function WalkthroughDetail() {
       ))}
 
       <p className="mt-8 border-t border-line pt-4 font-mono text-xs text-t3">
-        源 commit {doc.sourceCommit} · 代码为白名单节选
+        {fill(t.wtFootnote, { commit: doc.sourceCommit })}
       </p>
     </div>
   )

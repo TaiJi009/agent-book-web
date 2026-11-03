@@ -37,6 +37,8 @@ export interface ChapterDoc {
   experiments: { id: string; title: string; stars: number }[]
   questions: Block[]
   footnotes: Footnote[]
-  cjkChars: number
+  /** zh 文档：汉字数；en 文档：词数（wordCount）。二者互斥存在 */
+  cjkChars?: number
+  wordCount?: number
   minutes: number
 }

@@ -1,14 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { ChapterDoc } from '../lib/types'
-import { CHAPTERS } from '../lib/chapters'
+import { CHAPTERS, CHAPTERS_EN } from '../lib/chapters'
 import { BlockView } from '../components/BlockRenderer'
 import { InlineText } from '../components/InlineText'
+import { useLocale, localePath } from '../lib/i18n'
+import { useCopy, fill } from '../lib/copy'
 
-/* 章级懒加载：vite glob 惰性导入抽取产物 */
-const modules = import.meta.glob<{ default: ChapterDoc }>('../content/chapters/ch-*.json')
+/* 章级懒加载：vite glob 惰性导入抽取产物（zh + en 双目录） */
+const modules = import.meta.glob<{ default: ChapterDoc }>([
+  '../content/chapters/ch-*.json',
+  '../content/en/chapters/ch-*.json',
+])
 
-const chapterMeta = (slug: string) => CHAPTERS.find((c) => c.slug === slug)
+const chapterFile = (locale: string, slug: string) =>
+  locale === 'en' ? `../content/en/chapters/ch-${slug}.json` : `../content/chapters/ch-${slug}.json`
 
 /* 阅读进度：Agent 状态栏隐喻（顶部 2px，章节色） */
 function useReadingProgress(ref: React.RefObject<HTMLElement | null>, ready: boolean) {
@@ -50,6 +56,8 @@ function useChapterNumParallax(ref: React.RefObject<HTMLElement | null>, ready: 
 /* TOC scroll-spy：活动指示条弹簧滑动 */
 function Toc({ items }: { items: ChapterDoc['toc'] }) {
   const [active, setActive] = useState(items[0]?.id ?? '')
+  const t = useCopy()
+  const locale = useLocale()
   useEffect(() => {
     const heads = items
       .map((t) => document.getElementById(t.id))
@@ -66,7 +74,7 @@ function Toc({ items }: { items: ChapterDoc['toc'] }) {
 
   const idx = items.findIndex((t) => t.id === active)
   return (
-    <nav aria-label="本章目录" className="relative text-[13px]">
+    <nav aria-label={t.tocAria} className="relative text-[13px]">
       {/* 活动指示条：--spring 滑动 */}
       <span
         aria-hidden
@@ -80,21 +88,21 @@ function Toc({ items }: { items: ChapterDoc['toc'] }) {
         }}
       />
       <ul className="space-y-1.5 border-l border-line">
-        {items.map((t) => (
-          <li key={t.id}>
+        {items.map((item) => (
+          <li key={item.id}>
             <button
               type="button"
               onClick={() => {
-                document.getElementById(t.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                 // 延后 replaceState：平滑滚动进行中调用它会取消滚动
-                const route = window.location.hash.match(/^#\/chapter\/([^#?]+)/)?.[1] ?? ''
-                setTimeout(() => history.replaceState(null, '', `#/chapter/${route}#${t.id}`), 700)
+                const route = window.location.hash.match(/^#(?:\/en)?\/chapter\/([^#?]+)/)?.[1] ?? ''
+                setTimeout(() => history.replaceState(null, '', `#${localePath(`/chapter/${route}`, locale)}#${item.id}`), 700)
               }}
               className={`block w-full py-0.5 pr-2 text-left leading-snug transition-colors duration-[var(--dur-instant)] ${
-                t.depth === 3 ? 'pl-7' : 'pl-4'
-              } ${active === t.id ? 'font-medium text-t1' : 'text-t3 hover:text-t2'}`}
+                item.depth === 3 ? 'pl-7' : 'pl-4'
+              } ${active === item.id ? 'font-medium text-t1' : 'text-t3 hover:text-t2'}`}
             >
-              {t.text}
+              {item.text}
             </button>
           </li>
         ))}
@@ -104,17 +112,20 @@ function Toc({ items }: { items: ChapterDoc['toc'] }) {
 }
 
 function PrevNext({ slug }: { slug: string }) {
-  const i = CHAPTERS.findIndex((c) => c.slug === slug)
-  const prev = i > 0 ? CHAPTERS[i - 1] : null
-  const next = i < CHAPTERS.length - 1 ? CHAPTERS[i + 1] : null
-  const Card = ({ c, dir }: { c: (typeof CHAPTERS)[number]; dir: 'prev' | 'next' }) => (
+  const t = useCopy()
+  const locale = useLocale()
+  const CHAPTERS_L = locale === 'en' ? CHAPTERS_EN : CHAPTERS
+  const i = CHAPTERS_L.findIndex((c) => c.slug === slug)
+  const prev = i > 0 ? CHAPTERS_L[i - 1] : null
+  const next = i < CHAPTERS_L.length - 1 ? CHAPTERS_L[i + 1] : null
+  const Card = ({ c, dir }: { c: (typeof CHAPTERS_L)[number]; dir: 'prev' | 'next' }) => (
     <Link
-      to={`/chapter/${c.slug}`}
+      to={localePath(`/chapter/${c.slug}`, locale)}
       viewTransition
       data-chapter={c.slug}
       className="card-lift press group flex-1 rounded-xl border border-line bg-surface p-5"
     >
-      <p className="font-mono text-xs text-t3">{dir === 'prev' ? '← 上一章' : '下一章 →'}</p>
+      <p className="font-mono text-xs text-t3">{dir === 'prev' ? t.prevChapter : t.nextChapter}</p>
       <p className="mt-1.5 font-display text-base font-semibold" style={{ color: 'var(--chapter)' }}>
         {c.n === null ? c.title : `${String(c.n).padStart(2, '0')} · ${c.title}`}
       </p>
@@ -122,7 +133,7 @@ function PrevNext({ slug }: { slug: string }) {
     </Link>
   )
   return (
-    <nav className="mt-16 flex flex-col gap-4 sm:flex-row" aria-label="章节导航">
+    <nav className="mt-16 flex flex-col gap-4 sm:flex-row" aria-label={t.ariaChapterNav}>
       {prev ? <Card c={prev} dir="prev" /> : <div className="flex-1" />}
       {next ? <Card c={next} dir="next" /> : <div className="flex-1" />}
     </nav>
@@ -131,7 +142,9 @@ function PrevNext({ slug }: { slug: string }) {
 
 export function Chapter() {
   const { slug = '1' } = useParams()
-  const meta = chapterMeta(slug)
+  const locale = useLocale()
+  const t = useCopy()
+  const meta = (locale === 'en' ? CHAPTERS_EN : CHAPTERS).find((c) => c.slug === slug)
   const [doc, setDoc] = useState<ChapterDoc | null>(null)
   const [loading, setLoading] = useState(true)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -143,14 +156,14 @@ export function Chapter() {
     let alive = true
     setLoading(true)
     setDoc(null)
-    modules[`../content/chapters/ch-${slug}.json`]?.().then((m) => {
+    modules[chapterFile(locale, slug)]?.().then((m) => {
       if (alive) {
         setDoc(m.default)
         setLoading(false)
       }
     })
     return () => { alive = false }
-  }, [slug])
+  }, [slug, locale])
 
   // 章节上下文挂载到 <html>（accent 群体换色）+ 恢复上次阅读位置 / 深链锚点（来自搜索或 TOC replaceState）
   useEffect(() => {
@@ -163,7 +176,7 @@ export function Chapter() {
         requestAnimationFrame(() => {
           document.getElementById(decodeURIComponent(hashTarget))?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior })
           window.scrollBy(0, -70)
-          history.replaceState(null, '', `#/chapter/${doc.slug}`)
+          history.replaceState(null, '', `#${localePath(`/chapter/${doc.slug}`, locale)}`)
         })
       } else if (saved > 200) {
         requestAnimationFrame(() => window.scrollTo({ top: saved, behavior: 'instant' as ScrollBehavior }))
@@ -177,7 +190,7 @@ export function Chapter() {
         window.removeEventListener('beforeunload', onLeave)
       }
     }
-  }, [doc])
+  }, [doc, locale])
 
   if (loading || !doc) {
     return (
@@ -191,6 +204,8 @@ export function Chapter() {
       </div>
     )
   }
+
+  const lengthCount = doc.wordCount ?? doc.cjkChars ?? 0
 
   return (
     <>
@@ -210,7 +225,7 @@ export function Chapter() {
               {meta?.n === null || !meta?.n ? '' : String(meta.n).padStart(2, '0')}
             </span>
             <p className="rise-in beat-1 font-mono text-xs uppercase tracking-[0.25em] text-t3">
-              {doc.sourceFile} · 约 {doc.minutes} 分钟
+              {doc.sourceFile} · {fill(t.minutesRead, { n: doc.minutes })}
             </p>
             <h1 className="rise-in beat-2 mt-3 font-display text-4xl font-semibold tracking-tight">
               {doc.title}
@@ -227,7 +242,7 @@ export function Chapter() {
           {/* 脚注 */}
           {doc.footnotes.length > 0 && (
             <section className="mt-14 border-t border-line pt-6">
-              <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-t3">脚注</h2>
+              <h2 className="font-display text-sm font-semibold uppercase tracking-wider text-t3">{t.footnotesTitle}</h2>
               <ol className="mt-4 space-y-2 text-sm leading-relaxed text-t2">
                 {doc.footnotes.map((f) => (
                   <li key={f.id} id={`fn-${f.id}`} className="scroll-mt-24">
@@ -241,7 +256,7 @@ export function Chapter() {
 
           {/* 内容溯源 */}
           <p className="mt-12 font-mono text-xs text-t3">
-            源：{doc.sourceFile} @ {doc.sourceCommit} · {doc.cjkChars.toLocaleString()} 字
+            {fill(t.sourceLine, { file: doc.sourceFile, commit: doc.sourceCommit, n: lengthCount.toLocaleString() })}
           </p>
 
           <PrevNext slug={doc.slug} />
