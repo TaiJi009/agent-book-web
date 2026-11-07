@@ -48,9 +48,10 @@ const PATTERNS = LOCALE === 'en'
     }
 
 const SHIKI_LANGS = [
-  'python', 'javascript', 'typescript', 'tsx', 'json', 'bash', 'yaml', 'text',
+  'python', 'javascript', 'typescript', 'tsx', 'json', 'jsonc', 'ini', 'bash', 'yaml', 'text',
   'html', 'css', 'java', 'c', 'cpp', 'go', 'rust', 'lua', 'toml', 'markdown', 'sql', 'xml',
 ]
+const LANG_ALIAS = { env: 'ini' }
 
 /* ── pandoc 方言清洗 ── */
 const stripPandocAttrs = (s) => s.replace(/\s*\{[^}]*\}\s*$/g, '').trim()
@@ -206,7 +207,8 @@ function blockInQuote(node, audit) {
       return imgs.map((img) => ({ kind: 'figure', src: imgSrc(img.url), alt: stripPandocAttrs(img.alt || '') }))
     }
   }
-  return [block(node, audit)]
+  const out = block(node, audit)
+  return Array.isArray(out) ? out : [out]
 }
 
 const textOf = (node) =>
@@ -305,7 +307,8 @@ for (const { slug, file } of FILES) {
       chapterTitle = stripPandocAttrs(node.children.map((c) => textOf(c)).join(''))
       continue
     }
-    push(block(node, audit))
+    const out = block(node, audit)
+    Array.isArray(out) ? out.forEach(push) : push(out)
   }
 
   // 脚注定义渲染（KaTeX/行内格式）
@@ -318,7 +321,7 @@ for (const { slug, file } of FILES) {
   // 代码块 Shiki 双主题预着色（defaultColor:false → CSS 变量随主题切换）
   for (const b of blocks) {
     if (b.kind === 'code') {
-      const lang = SHIKI_LANGS.includes(b.lang) ? b.lang : 'text'
+      const lang = SHIKI_LANGS.includes(b.lang) ? b.lang : LANG_ALIAS[b.lang] ?? 'text'
       b.html = highlighter.codeToHtml(b.value, {
         lang,
         themes: { light: 'vitesse-light', dark: 'vitesse-dark' },

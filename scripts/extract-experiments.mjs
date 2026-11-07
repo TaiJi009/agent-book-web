@@ -28,7 +28,8 @@ const TYPE_LABEL = LOCALE === 'en'
   : { runnable: '可运行', repro: '复现', design: '设计' }
 
 const mdast = unified().use(remarkParse).use(remarkGfm).use(remarkMath)
-const SHIKI_LANGS = ['python', 'javascript', 'typescript', 'json', 'bash', 'yaml', 'text', 'html', 'css', 'tsx']
+const SHIKI_LANGS = ['python', 'javascript', 'typescript', 'json', 'jsonc', 'ini', 'bash', 'yaml', 'text', 'html', 'css', 'tsx']
+const LANG_ALIAS = { env: 'ini' }
 
 const stripAttrs = (s) => s.replace(/\s*\{[^}]*\}\s*$/g, '').trim()
 const textOf = (n) => (n.type === 'text' || n.type === 'inlineCode' ? n.value : n.children ? n.children.map(textOf).join('') : '')
@@ -222,7 +223,7 @@ for (const rec of LOCALE === 'en' ? [] : experiments.values()) {
       detail.readme = blocks.slice(0, 80).filter(hasText) // 外部大仓 README 截断
       for (const b of detail.readme) {
         if (b.kind === 'code') {
-          const lang = SHIKI_LANGS.includes(b.lang) ? b.lang : 'text'
+          const lang = SHIKI_LANGS.includes(b.lang) ? b.lang : LANG_ALIAS[b.lang] ?? 'text'
           b.html = highlighter.codeToHtml(b.value, { lang, themes: { light: 'vitesse-light', dark: 'vitesse-dark' }, defaultColor: false })
           delete b.value
         }
