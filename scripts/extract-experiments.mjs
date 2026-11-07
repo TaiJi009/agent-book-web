@@ -48,23 +48,129 @@ function inline(node) {
   }
 }
 
+/* ── 内链改写：GitHub 风格 slug / 上游 html 锚点 → rh-id；相对 .md → 文档内锚点；代码/数据/目录 → 上游深链 ── */
+const GITHUB_REPO = 'https://github.com/bojieli/ai-agent-book'
+const EXT_PATH_RE = /\.[A-Za-z0-9]+$/
+const HTML_TAG_A_RE = /<a\b[^>]*>/gi
+const HTML_ANCHOR_ATTR_RE = /\b(?:id|name)\s*=\s*["']?([^"'\s>]+)/i
+
+/** GitHub slugify：空白→-，小写；中文/字母/数字/组合符/-/_ 保留，其余标点与 emoji 丢弃 */
+function githubSlug(text) {
+  let out = ''
+  for (const ch of text) {
+    if (/\s/u.test(ch)) out += '-'
+    else if (/[\p{L}\p{N}\p{M}_-]/u.test(ch)) out += ch.toLowerCase()
+  }
+  return out
+}
+
+const decodeAnchor = (s) => { try { return decodeURIComponent(s) } catch { return s } }
+
+/** 相对链接 → 上游 GitHub 深链（baseSegs 为该 README 所在目录的仓库根相对段） */
+function upstreamDeepLink(raw, baseSegs) {
+  const isDir = raw.endsWith('/') || !EXT_PATH_RE.test(raw.replace(/\/+$/, ''))
+  let rel = raw.replace(/^\.\/+/, '')
+  let segs
+  if (/^chapter\d+\//.test(rel)) {
+    segs = rel.split('/') /* 已是仓库根相对：直接拼 */
+  } else if (rel.startsWith('../')) {
+    segs = [...baseSegs]
+    while (rel.startsWith('../')) { rel = rel.slice(3); if (segs.length) segs.pop() }
+    segs.push(...rel.split('/'))
+  } else {
+    segs = [...baseSegs, ...rel.split('/')]
+  }
+  const path = segs.filter((s) => s && s !== '.').join('/')
+  return `${GITHUB_REPO}/${isDir ? 'tree' : 'blob'}/main/${path}`
+}
+
+/** 遍历 readme 块树，就地把 t:'a' 的 href 改写为可路由形式 */
+function rewriteReadmeLinks(blocks, slugMap, htmlAnchors, baseSegs, expId, warnings) {
+  const stripNonWord = (s) => s.replace(/[^\p{L}\p{N}]/gu, '')
+  const resolveRh = (name) => {
+    const direct = htmlAnchors.get(name) ?? slugMap.get(name)
+    if (direct) return direct
+    /* GitHub slug 保留 emoji 变体符/连字符，上游个别链接与其 slug 不完全一致（如 ⚠️ 标题）：按字母数字投影兜底 */
+    const want = stripNonWord(name)
+    if (!want) return null
+    for (const [k, rh] of htmlAnchors) if (stripNonWord(k) === want) return rh
+    for (const [k, rh] of slugMap) if (stripNonWord(k) === want) return rh
+    return null
+  }
+  const rewrite = (n) => {
+    const href = n.href
+    if (/^(https?:|mailto:)/i.test(href) || href.startsWith('#/')) return /* 外链 / 站内路由：不动 */
+    if (href.startsWith('#')) {
+      const rh = resolveRh(decodeAnchor(href.slice(1)))
+      if (rh) { n.ext = false; n.href = `#${rh}`; return }
+      warnings.push(`${expId}: 未解析锚点 ${href}（保留原样）`)
+      return
+    }
+    /* 相对路径 */
+    const hashAt = href.indexOf('#')
+    const rawPath = hashAt === -1 ? href : href.slice(0, hashAt)
+    const rawHash = hashAt === -1 ? null : decodeAnchor(href.slice(hashAt + 1))
+    if (/\.md$/i.test(rawPath)) {
+      const rh = rawHash ? resolveRh(rawHash) : null
+      if (!rh && rawHash) warnings.push(`${expId}: 相对 .md 锚点未解析 ${href} → #rh-1`)
+      n.ext = false
+      n.href = rh ? `#${rh}` : '#rh-1'
+      return
+    }
+    n.ext = true /* 代码/数据文件/目录 → 上游 GitHub 深链，新窗口打开 */
+    n.href = upstreamDeepLink(rawPath, baseSegs)
+  }
+  const walk = (n) => {
+    if (Array.isArray(n)) return n.forEach(walk)
+    if (!n || typeof n !== 'object') return
+    if (n.t === 'a' && typeof n.href === 'string') return rewrite(n)
+    for (const k of Object.keys(n)) walk(n[k])
+  }
+  blocks.forEach(walk)
+}
+
 function katexHTML(tex, display) {
   try {
     return katex.renderToString(tex, { displayMode: display, throwOnError: true, output: 'html', strict: false })
   } catch { return null }
 }
 
-/** README 级 markdown → blocks（返回数组式 walk，杜绝 undefined 混入） */
+/** README 级 markdown → blocks（返回数组式 walk，杜绝 undefined 混入）+ 锚点映射（每个 README 独立作用域） */
 function toBlocks(md) {
   const tree = mdast.parse(md)
   let hSeq = 0
+  const slugSeen = new Map() /* slug → 已出现次数（GitHub 去重：重复加 -1/-2 后缀） */
+  const slugMap = new Map() /* GitHub slug → rh-id */
+  const htmlAnchors = new Map() /* 上游 <a id="x"></a> 锚点 → 其后第一个 heading 的 rh-id */
+  let pendingAnchors = []
+  const collectAnchors = (value) => {
+    for (const tag of value.matchAll(HTML_TAG_A_RE)) {
+      const m = HTML_ANCHOR_ATTR_RE.exec(tag[0])
+      if (m) pendingAnchors.push(m[1])
+    }
+  }
   const walk = (node) => {
     switch (node.type) {
       case 'heading': {
         hSeq++
-        return [{ kind: 'heading', depth: Math.min(node.depth + 1, 4), text: stripAttrs(node.children.map(textOf).join('')), id: `rh-${hSeq}` }]
+        const id = `rh-${hSeq}`
+        const text = stripAttrs(node.children.map(textOf).join(''))
+        const base = githubSlug(text)
+        if (node.depth >= 2 && base) {
+          const seen = slugSeen.get(base) ?? 0
+          slugSeen.set(base, seen + 1)
+          slugMap.set(seen === 0 ? base : `${base}-${seen}`, id)
+        }
+        if (pendingAnchors.length) {
+          for (const a of pendingAnchors) htmlAnchors.set(a, id)
+          pendingAnchors = []
+        }
+        return [{ kind: 'heading', depth: Math.min(node.depth + 1, 4), text, id }]
       }
       case 'paragraph': {
+        for (const child of node.children) {
+          if (child.type === 'html') collectAnchors(child.value) /* 行内 <a id>：CommonMark 中为段落内联 html */
+        }
         const imgs = node.children.filter((n) => n.type === 'image')
         if (imgs.length && node.children.every((n) => n.type === 'image' || textOf(n).trim() === '')) {
           return imgs.map((img) => ({ kind: 'figure', src: img.url, alt: stripAttrs(img.alt || '') }))
@@ -93,11 +199,14 @@ function toBlocks(md) {
         }]
       case 'thematicBreak':
         return [{ kind: 'hr' }]
-      default:
-        return [] /* html（GitHub 徽章等）与其他未识别节点：安全跳过 */
+      default: {
+        /* html：上游 <a id/name> 锚点块 → 记入映射待挂到其后第一个 heading，渲染仍跳过；其余（GitHub 徽章等）安全跳过 */
+        if (node.type === 'html') collectAnchors(node.value)
+        return []
+      }
     }
   }
-  return tree.children.flatMap(walk)
+  return { blocks: tree.children.flatMap(walk), slugMap, htmlAnchors }
 }
 
 const CODE_PRIORITY = [/^main\.py$/, /^(agent|experiment|runtime|flow)\.py$/, /^demo\.py$/, /^quickstart\.py$/, /^run_.*\.py$/, /^app\.py$/]
@@ -210,6 +319,17 @@ for (let n = 1; n <= 10; n++) {
 mkdirSync(OUT, { recursive: true })
 const highlighter = LOCALE === 'en' ? null : await createHighlighter({ themes: ['vitesse-light', 'vitesse-dark'], langs: SHIKI_LANGS })
 let detailCount = 0
+const linkWarnings = []
+
+/** rec.path（chapterN/...）→ 仓库根相对段（消解内嵌 ../） */
+const baseSegsOf = (p) => {
+  const segs = []
+  for (const s of p.split('/')) {
+    if (s === '..') segs.pop()
+    else if (s && s !== '.') segs.push(s)
+  }
+  return segs
+}
 
 for (const rec of LOCALE === 'en' ? [] : experiments.values()) {
   const detail = { ...rec, readme: [], codeFiles: [] }
@@ -217,10 +337,11 @@ for (const rec of LOCALE === 'en' ? [] : experiments.values()) {
     const dir = join(BOOK, rec.path)
     const readmeFile = existsSync(join(dir, 'README.md')) ? join(dir, 'README.md') : null
     if (readmeFile) {
-      const blocks = toBlocks(readFileSync(readmeFile, 'utf8'))
+      const { blocks, slugMap, htmlAnchors } = toBlocks(readFileSync(readmeFile, 'utf8'))
       // 空 p（纯空行/仅锚点残留）渲染为悬空空隙 → 丢弃
       const hasText = (b) => b.kind !== 'p' || (b.c ?? []).some((x) => typeof x.v === 'string' && x.v.trim())
       detail.readme = blocks.slice(0, 80).filter(hasText) // 外部大仓 README 截断
+      rewriteReadmeLinks(detail.readme, slugMap, htmlAnchors, baseSegsOf(rec.path), rec.id, linkWarnings)
       for (const b of detail.readme) {
         if (b.kind === 'code') {
           const lang = SHIKI_LANGS.includes(b.lang) ? b.lang : LANG_ALIAS[b.lang] ?? 'text'
@@ -257,3 +378,7 @@ const sourceCommit = execSync(`git -C "${BOOK}" rev-parse --short HEAD`).toStrin
 const detailNote = LOCALE === 'en' ? '（en 仅索引，详情复用 zh exp-*.json）' : ''
 console.log(`✓ 实验库[${LOCALE}]：索引 ${index.length} 项 · 详情 ${detailCount} 个 ${detailNote}· 源 commit ${sourceCommit}`)
 console.log(`  类型分布:`, index.reduce((m, e) => ((m[e.typeLabel] = (m[e.typeLabel] || 0) + 1), m), {}))
+if (linkWarnings.length) {
+  console.warn(`⚠ 未解析内链 ${linkWarnings.length} 条（保留原样/回退文档开头）：`)
+  for (const w of linkWarnings) console.warn(`  - ${w}`)
+}

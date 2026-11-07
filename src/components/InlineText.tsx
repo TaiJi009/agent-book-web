@@ -28,6 +28,22 @@ export function InlineText({ nodes }: { nodes: Inline[] }) {
               ? <span key={i} dangerouslySetInnerHTML={{ __html: n.html }} />
               : <code key={i}>{n.v}</code>
           case 'a':
+            /* 纯页内锚点：HashRouter 下直接改写 hash 会被当路由解析成 404 → 阻止默认行为，平滑滚动到目标元素 */
+            if (n.href.startsWith('#') && !n.href.startsWith('#/')) {
+              const href = n.href
+              return (
+                <a key={i} href={href} className="u-link" style={{ color: 'var(--accent)' }}
+                   onClick={(e) => {
+                     e.preventDefault()
+                     let id = href.slice(1)
+                     try { id = decodeURIComponent(id) } catch { /* 保留原样 */ }
+                     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                   }}
+                >
+                  <InlineText nodes={n.c} />
+                </a>
+              )
+            }
             if (n.href.startsWith('#/')) {
               return <Link key={i} to={n.href.slice(1)} viewTransition className="u-link" style={{ color: 'var(--accent)' }}><InlineText nodes={n.c} /></Link>
             }
