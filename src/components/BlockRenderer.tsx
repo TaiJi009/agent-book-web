@@ -4,6 +4,8 @@ import type { Block } from '../lib/types'
 import { InlineText } from './InlineText'
 import { Stars } from './Stars'
 import { Icon } from './Icon'
+import { CopyCodeButton } from './CopyCodeButton'
+import { htmlToText } from '../lib/htmlToText'
 import { useCopy, fill } from '../lib/copy'
 
 /* ── 图片灯箱：点击放大，Esc/点击关闭 ── */
@@ -135,7 +137,11 @@ export function BlockView({ block, nested = false }: { block: Block; nested?: bo
       return <ExperimentCard block={block} />
     case 'code':
       return (
-        <div className="my-5 overflow-hidden rounded-xl border border-line" style={{ background: 'var(--bg-sunken)' }}>
+        <div className="group relative my-5 overflow-hidden rounded-xl border border-line" style={{ background: 'var(--bg-sunken)' }}>
+          {/* 右上角复制：hover 显现，触屏常显 60%；文案经 htmlToText 从 Shiki 产物反解 */}
+          <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity duration-[var(--dur-instant)] focus-within:opacity-100 group-hover:opacity-100 max-md:opacity-60">
+            <CopyCodeButton text={htmlToText(block.html)} />
+          </div>
           <div
             className="shiki-host overflow-x-auto p-4 text-[13.5px] leading-[1.7]"
             dangerouslySetInnerHTML={{ __html: block.html }}

@@ -34,7 +34,7 @@ export function CopyCodeButton({ text }: { text: string }) {
       type="button"
       onClick={copy}
       aria-label={copied ? t.copied : t.copyCode}
-      className="press grid size-7 shrink-0 place-items-center rounded-md text-t3 transition-colors duration-[var(--dur-instant)] hover:text-accent"
+      className="press grid size-7 shrink-0 place-items-center rounded-md bg-surface/85 text-t3 backdrop-blur-sm transition-colors duration-[var(--dur-instant)] hover:text-accent"
     >
       {copied ? (
         <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="var(--ok)" strokeWidth={2.2}>

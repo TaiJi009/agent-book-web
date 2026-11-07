@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CHAPTERS } from '../lib/chapters'
 import { CopyCodeButton } from '../components/CopyCodeButton'
+import { htmlToText } from '../lib/htmlToText'
 import { useLocale, localePath } from '../lib/i18n'
 import { useCopy, fill } from '../lib/copy'
 
@@ -19,13 +20,6 @@ const modules = import.meta.glob<{ default: WtDoc }>([
 ])
 const wtKey = (locale: string, slug: string) =>
   locale === 'en' ? `../content/en/walkthroughs/wt-${slug}.json` : `../content/walkthroughs/wt-${slug}.json`
-
-/** Shiki html → 纯文本（复制用）：逐行剥 span、还原实体 */
-function htmlToText(html: string): string {
-  const div = document.createElement('div')
-  div.innerHTML = html
-  return (div.textContent ?? '').replace(/^\n/, '').replace(/\n$/, '')
-}
 
 export function WalkthroughDetail() {
   const { slug = '' } = useParams()
