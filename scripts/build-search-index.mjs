@@ -37,6 +37,13 @@ const inlineText = (c) =>
     .map((n) => typeof n === 'string' ? n : n.v ?? (n.c ? inlineText(n.c) : ''))
     .join('')
 
+const blockText = (b) => {
+  if (b.kind === 'p') return inlineText(b.c)
+  if (b.kind === 'list') return b.items.map((it) => it.map(blockText).join(' ')).join(' ')
+  if (b.kind === 'quote' || b.kind === 'callout') return (b.c ?? b.body ?? []).map(blockText).join(' ')
+  return ''
+}
+
 const docs = []
 const push = (d) => docs.push(d)
 
@@ -82,6 +89,25 @@ for (const t of glossary.terms) {
   push({ id: `term-${t.id}`, type: 'term', title: t.term, chapter: t.chapters[0], anchor: t.id, text: `${t.en} ${t.def}`.slice(0, 500) })
 }
 
+/* ── 4. 思考题：每章一个 doc，跳章级锚点（产物缺失时告警跳过，保持向后兼容） ── */
+const QUIZ_DIR = LOCALE === 'en' ? 'src/content/en/quiz' : 'src/content/quiz'
+const quizLabel = LOCALE === 'en'
+  ? (n, title) => `Quiz · Chapter ${n}: ${title}`
+  : (n, title) => `思考题 · 第 ${n} 章 ${title}`
+try {
+  const quizIdx = JSON.parse(readFileSync(join(ROOT, `${QUIZ_DIR}/index.json`), 'utf8'))
+  for (const { chapter } of quizIdx.chapters) {
+    const qz = JSON.parse(readFileSync(join(ROOT, `${QUIZ_DIR}/quiz-${chapter}.json`), 'utf8'))
+    const text = qz.questions.map((q) => q.blocks.map(blockText).join(' ')).join(' · ')
+    push({
+      id: `quiz-${chapter}`, type: 'quiz', title: quizLabel(chapter, qz.title),
+      chapter: String(chapter), anchor: null, text: text.slice(0, 800),
+    })
+  }
+} catch (e) {
+  console.warn(`! 跳过思考题索引（${QUIZ_DIR} 缺失或不可读，先运行 build-quiz.mjs）：${e.message}`)
+}
+
 /* ── 建倒排 ── */
 const inverted = new Map()
 const docBigrams = []
@@ -105,4 +131,4 @@ const index = {
 }
 
 writeFileSync(OUT, JSON.stringify(index))
-console.log(`✓ 搜索索引[${LOCALE}]：${docs.length} 个文档（章节小节 ${docs.filter(d=>d.type==='section').length} / 实验 ${docs.filter(d=>d.type==='experiment').length} / 术语 ${docs.filter(d=>d.type==='term').length}）· ${(readFileSync(OUT).length / 1024).toFixed(0)} KB · ${inverted.size} 个 bigram`)
+console.log(`✓ 搜索索引[${LOCALE}]：${docs.length} 个文档（章节小节 ${docs.filter(d=>d.type==='section').length} / 实验 ${docs.filter(d=>d.type==='experiment').length} / 术语 ${docs.filter(d=>d.type==='term').length} / 思考题 ${docs.filter(d=>d.type==='quiz').length}）· ${(readFileSync(OUT).length / 1024).toFixed(0)} KB · ${inverted.size} 个 bigram`)

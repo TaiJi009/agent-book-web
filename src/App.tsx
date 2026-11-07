@@ -11,6 +11,7 @@ import { WalkthroughDetail } from './pages/WalkthroughDetail'
 import { Reference } from './pages/Reference'
 import { ReferenceDetail } from './pages/ReferenceDetail'
 import { Learning } from './pages/Learning'
+import { Quiz } from './pages/Quiz'
 import { Placeholder } from './pages/Placeholder'
 
 /* 语言路由：zh 在根，en 镜像在 /en 前缀下（#/en/… 可分享）；组件内经 useLocale() 取语言 */
@@ -28,6 +29,7 @@ const router = createHashRouter([
       { path: '/reference', element: <Reference /> },
       { path: '/reference/:projectId', element: <ReferenceDetail /> },
       { path: '/learning', element: <Learning /> },
+      { path: '/quiz', element: <Quiz /> },
       { path: '/glossary', element: <Glossary /> },
       { path: '/en', element: <Home /> },
       { path: '/en/chapter/:slug', element: <Chapter /> },
@@ -38,6 +40,7 @@ const router = createHashRouter([
       { path: '/en/reference', element: <Reference /> },
       { path: '/en/reference/:projectId', element: <ReferenceDetail /> },
       { path: '/en/learning', element: <Learning /> },
+      { path: '/en/quiz', element: <Quiz /> },
       { path: '/en/glossary', element: <Glossary /> },
       { path: '*', element: <Placeholder /> },
     ],

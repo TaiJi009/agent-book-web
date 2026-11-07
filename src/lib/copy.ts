@@ -13,6 +13,7 @@ const zh = {
   navWalkthroughs: '代码讲解',
   navReference: '参考项目',
   navLearning: '学习路径',
+  navQuiz: '思考题',
   navGlossary: '术语表',
   skipToContent: '跳到正文',
   searchButton: '搜索',
@@ -119,6 +120,15 @@ const zh = {
   keyClose: 'Esc 关闭',
   searchEngineNote: 'bigram 全文检索 · 纯前端',
 
+  // ── Quiz（思考题） ──
+  quizTitle: '思考题',
+  quizDesc: '全书 {total} 道章末思考题：1 星 {s1} 道 · 2 星 {s2} 道 · 3 星 {s3} 道。建议先自己作答，再对照提纲。',
+  quizAnswerSource: '参考答案为上游 AI 生成提纲，经人工略作审校，仅供参照。',
+  quizAnswerToggle: '查看参考答案',
+  quizAnswerHide: '收起参考答案',
+  quizAnswerNone: '暂无参考答案。',
+  quizDriftNote: '此题答案基于旧版题集，可能与当前题干不匹配',
+
   // ── Glossary ──
   glossaryDesc: '全书 {n} 个关键概念，每条附出处章节。也可通过',
   glossarySearchTail: '搜索直达。',
@@ -161,6 +171,7 @@ const en: Record<keyof typeof zh, string> = {
   navWalkthroughs: 'Walkthroughs',
   navReference: 'Reference',
   navLearning: 'Learning',
+  navQuiz: 'Quiz',
   navGlossary: 'Glossary',
   skipToContent: 'Skip to content',
   searchButton: 'Search',
@@ -266,6 +277,15 @@ const en: Record<keyof typeof zh, string> = {
   keyGo: 'Enter Open',
   keyClose: 'Esc Close',
   searchEngineNote: 'bigram full-text search · client-side',
+
+  // ── Quiz（思考题） ──
+  quizTitle: 'Thought Questions',
+  quizDesc: '{total} end-of-chapter thought questions across the book: {s1} one-star · {s2} two-star · {s3} three-star. Try answering first, then compare with the outline.',
+  quizAnswerSource: 'Reference answers are AI-generated outlines from upstream, lightly reviewed by humans — for reference only.',
+  quizAnswerToggle: 'View answer',
+  quizAnswerHide: 'Hide answer',
+  quizAnswerNone: 'No reference answer yet.',
+  quizDriftNote: 'This answer was written for an earlier version of the question set and may not match the current question',
 
   // ── Glossary ──
   glossaryDesc: '{n} key concepts from the book, each linked to its source chapters. Also reachable via',

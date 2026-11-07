@@ -6,8 +6,8 @@ import { useLocale, localePath } from '../lib/i18n'
 import { useCopy, type Copy } from '../lib/copy'
 import { Icon } from './Icon'
 
-const TYPE_LABEL_KEY = { section: 'typeSection', experiment: 'typeExperiment', term: 'typeTerm' } as const satisfies Record<Hit['type'], keyof Copy>
-const TYPE_ICON = { section: 'book-open', experiment: 'beaker', term: 'layers' } as const
+const TYPE_LABEL_KEY = { section: 'typeSection', experiment: 'typeExperiment', term: 'typeTerm', quiz: 'navQuiz' } as const satisfies Record<Hit['type'], keyof Copy>
+const TYPE_ICON = { section: 'book-open', experiment: 'beaker', term: 'layers', quiz: 'book-open' } as const
 
 export function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [q, setQ] = useState('')
@@ -41,7 +41,10 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
   const go = (h: Hit | undefined) => {
     if (!h) return
     onClose()
-    if (h.type === 'section' || h.type === 'term') {
+    if (h.type === 'quiz') {
+      // 思考题跳章级：Quiz 页挂载后读 #q-N 滚到对应章
+      navigate(`${localePath('/quiz', locale)}#q-${h.chapter}`)
+    } else if (h.type === 'section' || h.type === 'term') {
       navigate(`${localePath(`/chapter/${h.chapter}`, locale)}#${h.anchor}`)
     } else {
       navigate(localePath(`/experiments/${h.id.replace('exp-', '')}`, locale))
@@ -109,7 +112,7 @@ export function SearchModal({ open, onClose }: { open: boolean; onClose: () => v
                 <span className="mt-0.5 block truncate text-xs text-t3">{h.text.slice(0, 90)}</span>
               </span>
               <span className="ml-auto shrink-0 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t3">
-                {t[TYPE_LABEL_KEY[h.type]]}{h.type === 'section' ? ` · ch${h.chapter}` : ''}
+                {t[TYPE_LABEL_KEY[h.type]]}{h.type === 'section' || h.type === 'quiz' ? ` · ch${h.chapter}` : ''}
               </span>
             </button>
           ))}
