@@ -18,6 +18,7 @@
   --bg-sunken: var(--brand-gray-light);
   --surface: #ffffff;
   --surface-hover: #ffffff;
+  --row-hover: var(--brand-gray-light);  /* 表格行/列表项悬停底；亮色=与 bg-sunken 同值 */
 
   /* 日间四级阶梯（对 --bg #faf9f5 的 WCAG 对比度）：
      heading 19.9（纯黑标题）> t1 16.0 > t2 7.5 > t3 4.7——与暗色四层结构对称 */
@@ -74,6 +75,9 @@
   --bg-sunken: oklch(0.20 0.004 90);
   --surface: oklch(0.235 0.005 90);
   --surface-hover: oklch(0.26 0.005 90);
+  /* 悬停底必须比 surface 提亮一档（0.27 > 0.235）：bg-sunken 暗值 0.20 比 surface 更暗，
+     行底色本就接近 sunken 系，压暗的 hover 等于无反馈——悬停语义禁止复用 bg-sunken */
+  --row-hover: oklch(0.27 0.005 90);
 
   /* 暗色四级阶梯（对 --bg #141413 的 WCAG 对比度）：
      heading 14.8 > t1 10.2 > t2 6.0 > t3 4.4——标题亮于正文（光晕效应下层级靠明度差）；
