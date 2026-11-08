@@ -40,14 +40,21 @@ const modules = import.meta.glob<{ default: QuizDoc }>([
 const quizFile = (locale: string, n: number) =>
   locale === 'en' ? `../content/en/quiz/quiz-${n}.json` : `../content/quiz/quiz-${n}.json`
 
-/* 单题卡片：题号 + 星级 + 题干；答案默认折叠（grid-rows 过渡，同实验卡交互） */
+/* 单题卡片：题号 + 星级 + 题干；头部整区可点击切换答案（链接/脚注/按钮冒泡豁免），答案默认折叠 */
 function QuestionCard({ chapter, q }: { chapter: number; q: QuizQuestion }) {
   const [open, setOpen] = useState(false)
   const t = useCopy()
   const id = `q-${chapter}-${q.ordinal}`
+  const toggle = () => setOpen(!open)
+  /* 点击目标若是链接/脚注/按钮等交互元素，不触发挥起折叠（避免跳转与折叠同时发生） */
+  const headClick = (e: React.MouseEvent) => {
+    if (q.answer === null) return
+    if ((e.target as HTMLElement).closest('a, button')) return
+    toggle()
+  }
   return (
     <article id={id} className="scroll-mt-24 overflow-hidden rounded-xl border border-line bg-surface">
-      <div className="px-5 pt-4">
+      <div className="cursor-pointer px-5 pt-4" onClick={headClick}>
         <div className="flex items-baseline gap-2.5">
           <span className="shrink-0 font-mono text-xs font-semibold" style={{ color: 'var(--accent)' }}>
             {String(chapter).padStart(2, '0')}·{q.ordinal}
@@ -62,7 +69,7 @@ function QuestionCard({ chapter, q }: { chapter: number; q: QuizQuestion }) {
             type="button"
             aria-expanded={open}
             aria-controls={`ans-${id}`}
-            onClick={() => setOpen(!open)}
+            onClick={(e) => { e.stopPropagation(); toggle() }}
             className="mb-4 ml-auto mt-3 flex w-fit items-center gap-1 text-sm font-medium transition-opacity duration-[var(--dur-instant)] hover:opacity-75"
             style={{ color: 'var(--accent)' }}
           >
