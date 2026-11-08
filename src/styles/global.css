@@ -40,6 +40,11 @@ html {
 }
 body { margin: 0; }
 
+/* 标题层级：heading token（日间纯黑 / 暗色提亮，与正文拉开一级；四层体系见 tokens.css） */
+h1, h2, h3, h4 {
+  color: var(--heading);
+}
+
 /* 焦点环：2px 品牌橙 + 2px 偏移（交互语义=品牌色，全站统一） */
 :focus-visible {
   outline: 2px solid var(--accent);

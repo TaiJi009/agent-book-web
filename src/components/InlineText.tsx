@@ -16,7 +16,7 @@ export function InlineText({ nodes }: { nodes: Inline[] }) {
           case 'text':
             return <span key={i}>{n.v}</span>
           case 'strong':
-            return <strong key={i} className="font-semibold"><InlineText nodes={n.c} /></strong>
+            return <strong key={i} className="font-semibold" style={{ color: 'var(--heading)' }}><InlineText nodes={n.c} /></strong>
           case 'em':
             return <em key={i}><InlineText nodes={n.c} /></em>
           case 'del':
