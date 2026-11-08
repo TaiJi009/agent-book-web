@@ -169,7 +169,7 @@ export function BlockView({ block, nested = false }: { block: Block; nested?: bo
             </thead>
             <tbody>
               {block.rows.map((r, ri) => (
-                <tr key={ri} className="transition-colors duration-[var(--dur-instant)] hover:bg-sunken">
+                <tr key={ri} className="transition-colors duration-[var(--dur-instant)] hover:bg-[var(--row-hover)]">
                   {r.map((c, ci) => (
                     <td key={ci} className="border-b border-line px-4 py-2.5 align-top text-t2">
                       <InlineText nodes={c} />

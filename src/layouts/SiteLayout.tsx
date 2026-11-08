@@ -84,7 +84,7 @@ export function SiteLayout() {
                 viewTransition
                 className={({ isActive }) =>
                   `rounded-md px-2.5 py-1.5 text-sm transition-colors duration-[var(--dur-instant)] ${
-                    isActive ? 'bg-accent-weak text-t1' : 'text-t2 hover:bg-sunken hover:text-t1'
+                    isActive ? 'bg-accent-weak text-t1' : 'text-t2 hover:bg-[var(--row-hover)] hover:text-t1'
                   }`
                 }
               >
