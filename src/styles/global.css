@@ -52,6 +52,11 @@ h1, h2, h3, h4 {
   border-radius: 2px;
 }
 
+/* 搜索弹窗输入框豁免焦点环：弹窗本身即焦点上下文，输入光标已足够（未分层规则需同层级覆盖） */
+[role='dialog'] input:focus-visible {
+  outline: none;
+}
+
 /* 行内代码与中文之间留 0.15em 空隙 */
 code { font-family: var(--font-mono); }
 :not(pre) > code {
