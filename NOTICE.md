@@ -8,6 +8,7 @@
 - **上游仓库**：<https://github.com/bojieli/ai-agent-book> · Copyright © 李博杰 (bojieli)，Apache License 2.0
 - **本站内容快照**：上游 commit `6da8917c`（2026-10-28 工作区 checkout）
 - **修改说明**：书稿 Markdown 经 `scripts/extract-book.mjs`、`scripts/extract-experiments.mjs`、`scripts/build-walkthroughs.mjs`、`scripts/build-reference.mjs` 等提取脚本转换为结构化 JSON（`src/content/`）并重排为 web 版式；提取脚本与生成数据均在本仓库中公开，生成数据内含 `sourceCommit` 字段以便溯源
+- **思考题页**：题目取自书稿各章「思考题」小节；参考答案取自上游 `book/reference-answers.md` / `book-en/reference-answers.md`——由 AI 生成提纲、经人工略作审校，仅供参照，不构成标准答案。经 `scripts/build-quiz.mjs` 按（章号、题序）与题目配对生成 `src/content/quiz/`；答案与当前题干存在实质漂移（基于旧版题集）的题目在页内以提示条标注
 
 ## 英文版内容来源
 

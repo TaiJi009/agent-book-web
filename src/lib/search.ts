@@ -2,7 +2,7 @@
 
 export interface SearchDoc {
   id: string
-  type: 'section' | 'experiment' | 'term'
+  type: 'section' | 'experiment' | 'term' | 'quiz'
   title: string
   chapter: string
   anchor: string | null
