@@ -106,19 +106,33 @@ function QuestionCard({ chapter, q }: { chapter: number; q: QuizQuestion }) {
   )
 }
 
-/* 章分组：章号色字 + 章名（链接回正文）+ 题数徽章 + 章级批量开关（受控） */
+/* 章分组：整行可点击折叠/展开；标题行 sticky 悬停（滚动中常驻，方便随时折叠） */
 function ChapterSection({ doc, open, onToggle }: { doc: QuizDoc; open: boolean; onToggle: () => void }) {
   const t = useCopy()
   const locale = useLocale()
   const CHAPTERS_L = locale === 'en' ? CHAPTERS_EN : CHAPTERS
   const meta = CHAPTERS_L.find((c) => c.slug === String(doc.chapter))
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle() }
+  }
   return (
-    <section id={`q-${doc.chapter}`} className="mt-12 scroll-mt-24">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line pb-2.5">
+    <section id={`q-${doc.chapter}`} className="mt-6 scroll-mt-14">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-expanded={open}
+        aria-controls={`qs-${doc.chapter}`}
+        aria-label={open ? t.quizChapterCollapse : t.quizChapterExpand}
+        onClick={onToggle}
+        onKeyDown={handleKey}
+        className="sticky top-14 z-20 flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 border-b border-line py-2.5 backdrop-blur"
+        style={{ background: 'color-mix(in srgb, var(--bg) 92%, transparent)' }}
+      >
         <Link
           to={localePath(`/chapter/${doc.chapter}`, locale)}
           viewTransition
           data-chapter={String(doc.chapter)}
+          onClick={(e) => e.stopPropagation()}
           className="group flex items-baseline gap-2.5"
         >
           <span className="font-mono text-sm font-semibold" style={{ color: 'var(--chapter)' }}>
@@ -135,23 +149,13 @@ function ChapterSection({ doc, open, onToggle }: { doc: QuizDoc; open: boolean; 
           <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t3">
             {fill(t.nItems, { n: doc.questions.length })}
           </span>
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-controls={`qs-${doc.chapter}`}
-            onClick={onToggle}
-            className="flex items-center gap-1 text-xs font-medium transition-opacity duration-[var(--dur-instant)] hover:opacity-75"
-            style={{ color: 'var(--accent)' }}
+          <span
+            aria-hidden
+            className="shrink-0 text-[var(--accent)] transition-transform duration-[var(--dur-quick)]"
+            style={{ transform: open ? 'rotate(180deg)' : '', transitionTimingFunction: 'var(--ease-standard)' }}
           >
-            {open ? t.quizChapterCollapse : t.quizChapterExpand}
-            <span
-              aria-hidden
-              className="shrink-0 transition-transform duration-[var(--dur-quick)]"
-              style={{ transform: open ? 'rotate(180deg)' : '', transitionTimingFunction: 'var(--ease-standard)' }}
-            >
-              <Icon name="chevron-down" size={13} />
-            </span>
-          </button>
+            <Icon name="chevron-down" size={15} />
+          </span>
         </span>
       </div>
       {/* 章级折叠：题干列表 DOM 常驻（grid-rows 过渡），保证 #q-N 锚点目标存在 */}
