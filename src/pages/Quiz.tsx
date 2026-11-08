@@ -63,7 +63,7 @@ function QuestionCard({ chapter, q }: { chapter: number; q: QuizQuestion }) {
             aria-expanded={open}
             aria-controls={`ans-${id}`}
             onClick={() => setOpen(!open)}
-            className="mb-4 mt-3 flex items-center gap-1 text-sm font-medium transition-opacity duration-[var(--dur-instant)] hover:opacity-75"
+            className="mb-4 ml-auto mt-3 flex w-fit items-center gap-1 text-sm font-medium transition-opacity duration-[var(--dur-instant)] hover:opacity-75"
             style={{ color: 'var(--accent)' }}
           >
             {open ? t.quizAnswerHide : t.quizAnswerToggle}
@@ -106,15 +106,15 @@ function QuestionCard({ chapter, q }: { chapter: number; q: QuizQuestion }) {
   )
 }
 
-/* 章分组：章号色字 + 章名（链接回正文）+ 题数徽章 */
-function ChapterSection({ doc }: { doc: QuizDoc }) {
+/* 章分组：章号色字 + 章名（链接回正文）+ 题数徽章 + 章级批量开关（受控） */
+function ChapterSection({ doc, open, onToggle }: { doc: QuizDoc; open: boolean; onToggle: () => void }) {
   const t = useCopy()
   const locale = useLocale()
   const CHAPTERS_L = locale === 'en' ? CHAPTERS_EN : CHAPTERS
   const meta = CHAPTERS_L.find((c) => c.slug === String(doc.chapter))
   return (
     <section id={`q-${doc.chapter}`} className="mt-12 scroll-mt-24">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line pb-2.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line pb-2.5">
         <Link
           to={localePath(`/chapter/${doc.chapter}`, locale)}
           viewTransition
@@ -131,12 +131,39 @@ function ChapterSection({ doc }: { doc: QuizDoc }) {
             {meta?.title ?? doc.title}
           </span>
         </Link>
-        <span className="ml-auto rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t3">
-          {fill(t.nItems, { n: doc.questions.length })}
+        <span className="ml-auto flex items-center gap-2.5">
+          <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] text-t3">
+            {fill(t.nItems, { n: doc.questions.length })}
+          </span>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={`qs-${doc.chapter}`}
+            onClick={onToggle}
+            className="flex items-center gap-1 text-xs font-medium transition-opacity duration-[var(--dur-instant)] hover:opacity-75"
+            style={{ color: 'var(--accent)' }}
+          >
+            {open ? t.quizChapterCollapse : t.quizChapterExpand}
+            <span
+              aria-hidden
+              className="shrink-0 transition-transform duration-[var(--dur-quick)]"
+              style={{ transform: open ? 'rotate(180deg)' : '', transitionTimingFunction: 'var(--ease-standard)' }}
+            >
+              <Icon name="chevron-down" size={13} />
+            </span>
+          </button>
         </span>
       </div>
-      <div className="mt-3 space-y-3">
-        {doc.questions.map((q) => <QuestionCard key={q.ordinal} chapter={doc.chapter} q={q} />)}
+      {/* 章级折叠：题干列表 DOM 常驻（grid-rows 过渡），保证 #q-N 锚点目标存在 */}
+      <div
+        className="grid transition-[grid-template-rows] duration-[var(--dur-smooth)]"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr', transitionTimingFunction: 'var(--ease-standard)' }}
+      >
+        <div className="overflow-hidden">
+          <div id={`qs-${doc.chapter}`} className="mt-3 space-y-3">
+            {doc.questions.map((q) => <QuestionCard key={q.ordinal} chapter={doc.chapter} q={q} />)}
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -147,7 +174,19 @@ export function Quiz() {
   const locale = useLocale()
   const location = useLocation()
   const [docs, setDocs] = useState<QuizDoc[] | null>(null)
+  // 章级展开集合：默认空 = 所有章收起（仅标题行），点批量开关或搜索锚点跳转时展开
+  const [openChapters, setOpenChapters] = useState<Set<number>>(new Set())
   const IDX = INDEX[locale]
+
+  const toggleChapter = (n: number) =>
+    setOpenChapters((prev) => {
+      const s = new Set(prev)
+      if (s.has(n)) s.delete(n)
+      else s.add(n)
+      return s
+    })
+  const openChapter = (n: number) =>
+    setOpenChapters((prev) => (prev.has(n) ? prev : new Set(prev).add(n)))
 
   // 难度分布（来自 index.json，静态可算）
   const dist = useMemo(() => {
@@ -166,16 +205,18 @@ export function Quiz() {
     return () => { alive = false }
   }, [locale, IDX])
 
-  // 搜索跳转锚点：#q-N（章级）/#q-N-M（题级）挂载后滚动
+  // 搜索跳转锚点：#q-N（章级）/#q-N-M（题级）——先确保对应章展开，再滚动
   useEffect(() => {
     if (!docs) return
     const m = location.hash.match(/^#q-(\d+)(?:-(\d+))?/)
     if (m) {
+      openChapter(Number(m[1]))
       const target = m[2] ? `q-${m[1]}-${m[2]}` : `q-${m[1]}`
       requestAnimationFrame(() => {
         document.getElementById(target)?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior })
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docs, location.hash])
 
   return (
@@ -199,7 +240,14 @@ export function Quiz() {
           ))}
         </div>
       ) : (
-        docs.map((d) => <ChapterSection key={d.chapter} doc={d} />)
+        docs.map((d) => (
+          <ChapterSection
+            key={d.chapter}
+            doc={d}
+            open={openChapters.has(d.chapter)}
+            onToggle={() => toggleChapter(d.chapter)}
+          />
+        ))
       )}
     </div>
   )

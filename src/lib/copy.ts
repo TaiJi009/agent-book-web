@@ -128,6 +128,8 @@ const zh = {
   quizAnswerHide: '收起参考答案',
   quizAnswerNone: '暂无参考答案。',
   quizDriftNote: '此题答案基于旧版题集，可能与当前题干不匹配',
+  quizChapterExpand: '展开本章思考题',
+  quizChapterCollapse: '收起本章思考题',
 
   // ── Glossary ──
   glossaryDesc: '全书 {n} 个关键概念，每条附出处章节。也可通过',
@@ -286,6 +288,8 @@ const en: Record<keyof typeof zh, string> = {
   quizAnswerHide: 'Hide answer',
   quizAnswerNone: 'No reference answer yet.',
   quizDriftNote: 'This answer was written for an earlier version of the question set and may not match the current question',
+  quizChapterExpand: 'Expand chapter questions',
+  quizChapterCollapse: 'Collapse chapter questions',
 
   // ── Glossary ──
   glossaryDesc: '{n} key concepts from the book, each linked to its source chapters. Also reachable via',
